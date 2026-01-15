@@ -176,6 +176,12 @@ export DISCORD_WEBHOOK_URL="https://discord.com/api/webhooks/..."</code></pre>
             <h3>Example config.yaml</h3>
             <pre><code>version: 1
 
+mode: normal
+
+always_page:
+  - trufflehog
+  - "auth bypass"
+
 stack:
   cloud:
     - azure
@@ -243,6 +249,47 @@ settings:
               <li>Cloud provider mention (contextual)</li>
             </ul>
             <p class="note">Noisy matches are avoided with token-aware matching for short words.</p>
+          </div>
+        </div>
+      </section>
+
+      <section id="modes" class="section">
+        <div class="section-title">
+          <p class="eyebrow">Alert Modes</p>
+          <h2>Choose how noisy the alerts should be.</h2>
+        </div>
+        <div class="mode-grid">
+          <div class="panel mode-panel">
+            <h3>Alert Modes</h3>
+            <div class="mode-selector">
+              <span class="mode-option">( ) Quiet</span>
+              <span class="mode-option active">(*) Normal (default)</span>
+              <span class="mode-option">( ) Loud</span>
+            </div>
+            <p class="note">
+              Quiet: only wake us up for real fires. Normal: serious and relevant
+              issues. Loud: everything relevant, immediately. Everything else is
+              rolled into a digest.
+            </p>
+          </div>
+          <div class="panel mode-panel">
+            <h3>Mode snippets</h3>
+            <div class="mode-snippets">
+              <pre><code>mode: quiet
+# only high-confidence exploitation signals</code></pre>
+              <pre><code>mode: normal
+# serious + relevant (default)</code></pre>
+              <pre><code>mode: loud
+# page on any relevant alert</code></pre>
+            </div>
+          </div>
+          <div class="panel mode-panel">
+            <h3>Always alert me if these appear</h3>
+            <p class="note">Comma-separated input, no regex or rules.</p>
+            <div class="mode-input">trufflehog, auth bypass</div>
+            <pre><code>always_page:
+  - trufflehog
+  - "auth bypass"</code></pre>
           </div>
         </div>
       </section>

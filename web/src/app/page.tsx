@@ -13,6 +13,12 @@ export default function Home() {
   const exampleConfig = [
     "version: 1",
     "",
+    "mode: normal",
+    "",
+    "always_page:",
+    "  - trufflehog",
+    "  - \"auth bypass\"",
+    "",
     "stack:",
     "  cloud:",
     "    - azure",
@@ -357,6 +363,24 @@ export default function Home() {
                     <span>Slack</span>
                   </div>
                 </div>
+                <div className="alert-card">
+                  <div className="alert-head">
+                    <span className="alert-source">OSV</span>
+                    <span className="alert-severity high">P1 74</span>
+                  </div>
+                  <p className="alert-title">
+                    OSV-2024-0002: Deserialization bug in flask
+                  </p>
+                  <p className="alert-meta">Matched: direct dependency flask</p>
+                  <a className="alert-link" href="#" aria-label="Open advisory">
+                    Read advisory →
+                  </a>
+                  <div className="alert-tags">
+                    <span>Package</span>
+                    <span>pip</span>
+                    <span>Webhook</span>
+                  </div>
+                </div>
                 <p className="note">
                   These are the kinds of alerts this config will send. Everything
                   else is ignored.
@@ -375,6 +399,50 @@ export default function Home() {
             <p className="note">
               Loose mode uses normalization + synonyms; strict mode requires exact matches.
             </p>
+          </div>
+        </section>
+
+        <section id="modes" className="section">
+          <div className="section-title">
+            <p className="eyebrow">Alert Modes</p>
+            <h2>Choose how noisy the alerts should be.</h2>
+          </div>
+          <div className="mode-grid">
+            <div className="panel mode-panel">
+              <h3>Alert Modes</h3>
+              <div className="mode-selector">
+                <span className="mode-option">( ) Quiet</span>
+                <span className="mode-option active">(*) Normal (default)</span>
+                <span className="mode-option">( ) Loud</span>
+              </div>
+              <p className="note">
+                Quiet: only wake us up for real fires. Normal: serious and relevant
+                issues. Loud: everything relevant, immediately. Everything else is
+                rolled into a digest.
+              </p>
+            </div>
+            <div className="panel mode-panel">
+              <h3>Mode snippets</h3>
+              <div className="mode-snippets">
+                <pre>
+                  <code>{`mode: quiet\n# only high-confidence exploitation signals`}</code>
+                </pre>
+                <pre>
+                  <code>{`mode: normal\n# serious + relevant (default)`}</code>
+                </pre>
+                <pre>
+                  <code>{`mode: loud\n# page on any relevant alert`}</code>
+                </pre>
+              </div>
+            </div>
+            <div className="panel mode-panel">
+              <h3>Always alert me if these appear</h3>
+              <p className="note">Comma-separated input, no regex or rules.</p>
+              <div className="mode-input">trufflehog, auth bypass</div>
+              <pre>
+                <code>{`always_page:\n  - trufflehog\n  - "auth bypass"`}</code>
+              </pre>
+            </div>
           </div>
         </section>
 

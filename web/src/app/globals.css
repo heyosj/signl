@@ -348,6 +348,50 @@ a {
   align-items: stretch;
 }
 
+.mode-grid {
+  display: grid;
+  gap: 24px;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+.mode-panel pre {
+  margin-top: 12px;
+}
+
+.mode-selector {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 12px 0;
+  font-weight: 600;
+}
+
+.mode-option {
+  background: rgba(11, 14, 17, 0.06);
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.mode-option.active {
+  background: var(--accent);
+  color: #fff;
+}
+
+.mode-snippets pre {
+  background: #f1ede7;
+}
+
+.mode-input {
+  background: #f1ede7;
+  border-radius: 12px;
+  padding: 10px 12px;
+  font-size: 0.9rem;
+  color: #2b2f36;
+  margin-top: 8px;
+}
+
 .config-column {
   display: grid;
   gap: 24px;

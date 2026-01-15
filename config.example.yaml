@@ -1,5 +1,11 @@
 version: 1
 
+mode: normal
+
+always_page:
+  - trufflehog
+  - "auth bypass"
+
 stack:
   cloud:
     - azure

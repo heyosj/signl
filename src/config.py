@@ -79,6 +79,9 @@ class FeedsConfig:
 
 @dataclass
 class Config:
+    mode: str
+    mode_explicit: bool
+    always_page: list[str]
     version: int
     stack: StackConfig
     notifications: NotificationConfig
@@ -158,6 +161,8 @@ def load_config(path: str) -> Config:
         raise ValueError("Config root must be a mapping")
 
     version = _parse_config_version(data.get("version"))
+    mode, mode_explicit = _load_mode(data)
+    always_page = _require_list(data.get("always_page"), "always_page")
     stack = _load_stack(_require_dict(data.get("stack"), "stack"))
 
     notifications = _load_notifications(data)
@@ -182,6 +187,9 @@ def load_config(path: str) -> Config:
     scoring = _load_scoring(_require_dict(data.get("scoring"), "scoring"))
 
     return Config(
+        mode=mode,
+        mode_explicit=mode_explicit,
+        always_page=always_page,
         version=version,
         stack=stack,
         notifications=notifications,
@@ -424,3 +432,12 @@ def _parse_config_version(value: Any) -> int:
     if version < 1:
         raise ValueError("version must be >= 1")
     return version
+
+
+def _load_mode(data: dict[str, Any]) -> tuple[str, bool]:
+    if "mode" not in data:
+        return "normal", False
+    mode = str(data.get("mode", "normal")).strip().lower()
+    if mode not in {"quiet", "normal", "loud"}:
+        raise ValueError("mode must be quiet, normal, or loud")
+    return mode, True

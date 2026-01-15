@@ -72,6 +72,12 @@ The user creates a `config.yaml` file:
 ```yaml
 version: 1
 
+mode: normal
+
+always_page:
+  - trufflehog
+  - "auth bypass"
+
 stack:
   cloud:
     - azure

@@ -37,6 +37,8 @@ python -m src.main --config ./config.yaml --once
 ## Configuration
 
 See `config.example.yaml` for a simplified starter config. Key sections:
+- `mode`: quiet/normal/loud alerting behavior
+- `always_page`: keywords that always page when relevant
 - `version`: config schema version (default: 1)
 - `stack`: cloud, languages, packages, services, keywords, deps, match
 - `notify`: list of notifiers (Slack/Discord/webhook)
@@ -98,6 +100,30 @@ Generic webhook receives JSON with:
 
 - `notifications.*` is still accepted, but `notify` is preferred for multiple outputs.
 - Existing configs continue to work as-is; new fields are optional.
+- If `mode` is omitted, signl preserves legacy behavior and pages any relevant alert.
+
+### Noise Control
+
+Minimal config (opinionated defaults, no rule tuning):
+
+```
+mode: quiet
+
+stack:
+  cloud: [azure]
+  services: [kubernetes]
+  packages:
+    npm: [axios]
+
+always_page:
+  - trufflehog
+
+notify:
+  - type: slack
+    webhook_url: "${SLACK_WEBHOOK_URL}"
+```
+
+Quiet mode only pages for relevant, high-confidence exploitation signals. The `always_page` list bypasses mode when the term appears in a relevant alert. Everything else is routed to the digest.
 
 ## Deployment
 

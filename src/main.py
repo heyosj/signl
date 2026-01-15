@@ -13,6 +13,7 @@ from pathlib import Path
 
 from .config import load_config
 from .dependencies import DependenciesConfig, DependencySource, load_dependency_graph
+from .decisions import classify_alert
 from .feeds.cisa import CISAFeed, CISASettings
 from .feeds.github import GitHubFeed, GitHubSettings
 from .feeds.hackernews import HackerNewsFeed, HackerNewsSettings
@@ -28,11 +29,21 @@ from .scoring import score_alert
 
 async def main() -> None:
     args = _parse_args()
+    _configure_logging(args.verbose)
     if args.init_config:
         _init_config(Path(args.config))
         return
     config = load_config(args.config)
-    _configure_logging(args.verbose)
+
+    logger = logging.getLogger(__name__)
+    mode_label = config.mode.upper()
+    if not config.mode_explicit:
+        mode_label = f"{mode_label} (legacy default)"
+    logger.info("signl running in %s mode", mode_label)
+    if config.always_page:
+        logger.info("always_page keywords: %s", ", ".join(config.always_page))
+    else:
+        logger.info("always_page keywords: none")
 
     state = load_state(config.settings.state_file)
 
@@ -258,14 +269,26 @@ async def _poll_once(feeds, notifiers, config, state, dependencies, dry_run: boo
 
         score = score_alert(item, match, config.scoring, config.stack)
         message, metadata = build_notification_message(item, match.reasons, match, score)
-        candidates.append((message, metadata, item))
+        decision = classify_alert(
+            item,
+            match,
+            score,
+            config.mode,
+            config.always_page,
+            config.mode_explicit,
+        )
+        candidates.append((message, metadata, item, decision))
 
     if not dry_run and candidates:
-        candidates.sort(key=lambda entry: _priority_sort(entry[0].priority, entry[0].published))
-        for message, metadata, item in candidates:
+        immediate = [entry for entry in candidates if entry[3].immediate]
+        digest = [entry for entry in candidates if not entry[3].immediate]
+
+        immediate.sort(key=lambda entry: _priority_sort(entry[0].priority, entry[0].published))
+        for message, metadata, item, decision in immediate:
             if not notifiers:
                 logger.warning("No notifier configured; skipping %s", item.id)
                 continue
+            logger.info("Why this alerted: %s", decision.reason)
             sent = True
             for notifier in notifiers:
                 try:
@@ -284,6 +307,21 @@ async def _poll_once(feeds, notifiers, config, state, dependencies, dry_run: boo
                         config.settings.max_notifications_per_run,
                     )
                     break
+
+        if digest:
+            digest_message, digest_metadata = _build_digest_message(digest, config.mode)
+            digest_sent = True
+            for notifier in notifiers:
+                try:
+                    success = await notifier.send(digest_message, digest_metadata)
+                except Exception as exc:
+                    logger.error("Digest notifier failed: %s", exc)
+                    success = False
+                digest_sent = digest_sent and success
+            if digest_sent:
+                logger.info("Sent digest for %s alerts", len(digest))
+                for _, _, item, _ in digest:
+                    mark_sent(state, item.id)
 
     state.last_poll = datetime.now(timezone.utc)
     prune_sent(state)
@@ -314,6 +352,33 @@ def _normalize_dt(value: datetime) -> datetime:
 def _priority_sort(priority: str, published: datetime) -> tuple[int, datetime]:
     order = {"P0": 0, "P1": 1, "P2": 2, "P3": 3}
     return (order.get(priority, 9), _normalize_dt(published))
+
+
+def _build_digest_message(entries, mode: str):
+    from .notifiers.message import NotificationMessage, NotificationMetadata
+
+    now = datetime.now(timezone.utc)
+    titles = [entry[0].title for entry in entries]
+    summary_lines = [f"- {title}" for title in titles[:8]]
+    if len(titles) > 8:
+        summary_lines.append(f"... and {len(titles) - 8} more")
+    summary = "Relevant alerts routed to digest:\n" + "\n".join(summary_lines)
+    message = NotificationMessage(
+        title=f"Digest ({len(entries)} alerts)",
+        summary=summary,
+        priority="P3",
+        score=0,
+        url="",
+        source="digest",
+        published=now,
+        affected={},
+        tags=["digest"],
+    )
+    metadata = NotificationMetadata(
+        reasons=[f"Mode: {mode}"],
+        rationale=[],
+    )
+    return message, metadata
 
 
 def _build_test_item():
