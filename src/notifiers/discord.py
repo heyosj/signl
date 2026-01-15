@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from datetime import timezone
 import logging
 import asyncio
+import time
 from typing import Any
 
 import httpx
@@ -31,8 +32,10 @@ class DiscordNotifier(BaseNotifier):
     def __init__(self, settings: DiscordSettings) -> None:
         self._settings = settings
         self._logger = logging.getLogger(__name__)
+        self._last_sent_at = 0.0
 
     async def send(self, message: NotificationMessage, metadata: NotificationMetadata) -> bool:
+        await self._throttle()
         payload = _build_payload(message, metadata)
         headers = {"User-Agent": self._settings.user_agent}
 
@@ -48,6 +51,14 @@ class DiscordNotifier(BaseNotifier):
                     return True
                 self._logger.error("Discord webhook failed with status %s", response.status_code)
             return False
+
+    async def _throttle(self) -> None:
+        min_interval = 0.5
+        now = time.monotonic()
+        elapsed = now - self._last_sent_at
+        if elapsed < min_interval:
+            await asyncio.sleep(min_interval - elapsed)
+        self._last_sent_at = time.monotonic()
 
 
 def _build_payload(message: NotificationMessage, metadata: NotificationMetadata) -> dict[str, Any]:
