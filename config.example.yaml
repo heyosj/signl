@@ -1,3 +1,5 @@
+version: 1
+
 stack:
   cloud:
     - azure
@@ -43,84 +45,9 @@ stack:
     - oauth
     - saml
 
-  deps:
-    enabled: false
-    include_transitive: true
-    ecosystems: ["npm", "pip"]
-    sources:
-      - type: manifest
-        path: ./package.json
-      - type: lockfile
-        path: ./package-lock.json
-      - type: manifest
-        path: ./requirements.txt
-      - type: lockfile
-        path: ./poetry.lock
-
-  match:
-    mode: loose
-    synonyms: true
-    normalize_names: true
-
-  synonyms:
-    kubernetes: ["k8s", "aks", "eks", "gke"]
-
-  asset_criticality:
-    services:
-      kubernetes: 1.5
-    packages:
-      requests: 1.2
-
-# New multi-notifier list (preferred)
-notify:
-  - type: slack
-    webhook_url: "${SLACK_WEBHOOK_URL}"
-  - type: discord
-    webhook_url: "${DISCORD_WEBHOOK_URL}"
-  - type: webhook
-    url: "${WEBHOOK_URL}"
-    headers:
-      Authorization: "Bearer ${WEBHOOK_TOKEN}"
-
-# Legacy single notifier config (still supported)
 notifications:
-  slack:
-    webhook_url: "${SLACK_WEBHOOK_URL}"
   discord:
     webhook_url: "${DISCORD_WEBHOOK_URL}"
-
-feeds:
-  nvd: true # set false to disable
-  github: true # set false to disable
-  msrc: true # set false to disable
-  cisa:
-    enabled: true # set false to disable
-  osv:
-    enabled: true # set false to disable
-  hackernews:
-    enabled: true # set false to disable
-    max_terms: 6
-  rss:
-    - name: "Microsoft Security Response Center"
-      url: "https://msrc.microsoft.com/blog/rss/"
-    - name: "Microsoft Security Blog"
-      url: "https://www.microsoft.com/security/blog/feed/"
-    - name: "AWS Security Blog"
-      url: "https://aws.amazon.com/security/security-bulletins/feed/"
-    - name: "Azure Security Blog"
-      url: "https://azure.microsoft.com/en-us/blog/topics/security/feed/"
-    - name: "Google Security Blog"
-      url: "https://security.googleblog.com/feeds/posts/default?alt=rss"
-    - name: "Project Zero"
-      url: "https://googleprojectzero.blogspot.com/feeds/posts/default?alt=rss"
-    - name: "CISA Alerts"
-      url: "https://www.cisa.gov/uscert/ncas/alerts.xml"
-    - name: "CISA Tips"
-      url: "https://www.cisa.gov/uscert/ncas/tips.xml"
-    - name: "Ubuntu Security Notices"
-      url: "https://ubuntu.com/security/notices/rss.xml"
-    - name: "Debian Security Advisories"
-      url: "https://www.debian.org/security/dsa.en.rss"
 
 settings:
   poll_interval_minutes: 15
@@ -128,27 +55,4 @@ settings:
   include_low_severity: false
   max_results_per_feed: 200
   request_timeout_seconds: 20
-  user_agent: "signl/0.1"
-  max_notifications_per_run: 25
-  min_cvss_score: 7.0
-
-scoring:
-  enabled: true
-  weights:
-    severity: 0.45
-    exploitability: 0.25
-    relevance: 0.2
-    recency: 0.1
-  thresholds:
-    P0: 85
-    P1: 70
-    P2: 50
-    P3: 0
-  prefer_sources: ["cisa", "msrc", "nvd", "osv", "github"]
-  keywords:
-    exploited_in_wild:
-      - "exploited in the wild"
-      - "active exploitation"
-    poc:
-      - "proof of concept"
-      - "poc"
+  user_agent: "security-stack-notifier/0.1"

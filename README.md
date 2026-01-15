@@ -36,7 +36,8 @@ python -m src.main --config ./config.yaml --once
 
 ## Configuration
 
-See `config.example.yaml` for the full schema. Key sections:
+See `config.example.yaml` for a simplified starter config. Key sections:
+- `version`: config schema version (default: 1)
 - `stack`: cloud, languages, packages, services, keywords, deps, match
 - `notify`: list of notifiers (Slack/Discord/webhook)
 - `notifications.slack.webhook_url` + `notifications.discord.webhook_url`: legacy single notifier config

@@ -70,6 +70,8 @@ An open-source tool that monitors security feeds and notifies users only when it
 The user creates a `config.yaml` file:
 
 ```yaml
+version: 1
+
 stack:
   cloud:
     - azure

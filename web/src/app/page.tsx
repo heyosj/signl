@@ -11,69 +11,64 @@ export default function Home() {
   ].join("\n");
 
   const exampleConfig = [
+    "version: 1",
+    "",
     "stack:",
     "  cloud:",
     "    - azure",
     "    - aws",
+    "    - gcp",
     "",
-    "  services:",
-    "    - kubernetes",
-    "    - redis",
+    "  languages:",
+    "    - python",
+    "    - javascript",
+    "    - typescript",
+    "    - powershell",
+    "    - go",
     "",
     "  packages:",
     "    npm:",
+    "      - axios",
+    "      - react",
     "      - lodash",
+    "      - express",
     "    pip:",
     "      - requests",
+    "      - django",
+    "      - flask",
+    "      - pydantic",
+    "      - azure-identity",
+    "    go:",
+    "      - gin",
+    "      - cobra",
     "",
-    "  deps:",
-    "    enabled: true",
-    "    include_transitive: true",
-    "    ecosystems: [\"npm\", \"pip\"]",
-    "    sources:",
-    "      - type: manifest",
-    "        path: ./package.json",
-    "      - type: lockfile",
-    "        path: ./package-lock.json",
+    "  services:",
+    "    - entra-id",
+    "    - intune",
+    "    - azure-sentinel",
+    "    - kubernetes",
+    "    - docker",
+    "    - postgresql",
+    "    - redis",
     "",
-    "  match:",
-    "    mode: loose",
-    "    synonyms: true",
-    "    normalize_names: true",
+    "  keywords:",
+    "    - kerberos",
+    "    - ntlm",
+    "    - active directory",
+    "    - oauth",
+    "    - saml",
     "",
-    "notify:",
-    "  - type: slack",
-    "    webhook_url: \"${SLACK_WEBHOOK_URL}\"",
-    "  - type: discord",
+    "notifications:",
+    "  discord:",
     "    webhook_url: \"${DISCORD_WEBHOOK_URL}\"",
-    "  - type: webhook",
-    "    url: \"${WEBHOOK_URL}\"",
-    "",
-    "feeds:",
-    "  nvd: true",
-    "  github: true",
-    "  msrc: true",
-    "  cisa:",
-    "    enabled: true",
-    "  osv:",
-    "    enabled: true",
-    "  hackernews:",
-    "    enabled: true",
-    "    max_terms: 6",
     "",
     "settings:",
     "  poll_interval_minutes: 15",
     "  state_file: \"./state.json\"",
-    "  max_notifications_per_run: 10",
-    "  min_cvss_score: 7.0",
-    "",
-    "scoring:",
-    "  enabled: true",
-    "  thresholds:",
-    "    P0: 85",
-    "    P1: 70",
-    "    P2: 50",
-    "    P3: 0",
+    "  include_low_severity: false",
+    "  max_results_per_feed: 200",
+    "  request_timeout_seconds: 20",
+    "  user_agent: \"security-stack-notifier/0.1\"",
   ].join("\n");
 
   return (
@@ -218,12 +213,12 @@ export default function Home() {
             <div className="setup-step accent">
               <div className="setup-step-header">
                 <span className="step-number">+</span>
-                <h3>Production option</h3>
+                <h3>Optional: Docker or cron</h3>
               </div>
-              <p>Run in Docker and mount config/state for persistence.</p>
+              <p>Run in Docker for a clean host, or cron for a lightweight schedule.</p>
               <pre>
                 <code>
-                  {`docker run \\\n  -v ./config.yaml:/app/config.yaml \\\n  -v ./state.json:/app/state.json \\\n  security-stack-notifier`}
+                  {`docker run \\\n  -v ./config.yaml:/app/config.yaml \\\n  -v ./state.json:/app/state.json \\\n  security-stack-notifier\n\n# or cron (every 30 minutes)\n*/30 * * * * cd /path/to/signl && /path/to/signl/.venv/bin/python -m src.main --config ./config.yaml --once \\\n  >> /path/to/signl/signl.log 2>&1`}
                 </code>
               </pre>
             </div>
@@ -317,24 +312,6 @@ export default function Home() {
                     <span>Package</span>
                     <span>npm</span>
                     <span>Slack</span>
-                  </div>
-                </div>
-                <div className="alert-card">
-                  <div className="alert-head">
-                    <span className="alert-source">OSV</span>
-                    <span className="alert-severity high">P1 74</span>
-                  </div>
-                  <p className="alert-title">
-                    OSV-2024-0001: Deserialization bug in requests
-                  </p>
-                  <p className="alert-meta">Matched: direct dependency requests</p>
-                  <a className="alert-link" href="#" aria-label="Open advisory">
-                    Read advisory →
-                  </a>
-                  <div className="alert-tags">
-                    <span>Package</span>
-                    <span>pip</span>
-                    <span>Webhook</span>
                   </div>
                 </div>
                 <p className="note">

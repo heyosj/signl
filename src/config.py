@@ -79,6 +79,7 @@ class FeedsConfig:
 
 @dataclass
 class Config:
+    version: int
     stack: StackConfig
     notifications: NotificationConfig
     settings: Settings
@@ -156,6 +157,7 @@ def load_config(path: str) -> Config:
     if not isinstance(data, dict):
         raise ValueError("Config root must be a mapping")
 
+    version = _parse_config_version(data.get("version"))
     stack = _load_stack(_require_dict(data.get("stack"), "stack"))
 
     notifications = _load_notifications(data)
@@ -180,6 +182,7 @@ def load_config(path: str) -> Config:
     scoring = _load_scoring(_require_dict(data.get("scoring"), "scoring"))
 
     return Config(
+        version=version,
         stack=stack,
         notifications=notifications,
         settings=settings,
@@ -409,3 +412,15 @@ def _parse_min_cvss(value: Any) -> float | None:
         return float(value)
     except (TypeError, ValueError):
         raise ValueError("settings.min_cvss_score must be a number or null")
+
+
+def _parse_config_version(value: Any) -> int:
+    if value is None:
+        return 1
+    try:
+        version = int(value)
+    except (TypeError, ValueError):
+        raise ValueError("version must be an integer")
+    if version < 1:
+        raise ValueError("version must be >= 1")
+    return version

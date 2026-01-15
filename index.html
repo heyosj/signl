@@ -113,12 +113,16 @@ export DISCORD_WEBHOOK_URL="https://discord.com/api/webhooks/..."</code></pre>
             <pre><code>python -m src.main --config ./config.yaml --once</code></pre>
           </div>
           <div class="panel accent">
-            <h3>Production</h3>
-            <p>Schedule with cron, or run in Docker and mount config/state.</p>
+            <h3>Optional: Docker or cron</h3>
+            <p>Run in Docker for a clean host, or cron for a lightweight schedule.</p>
             <pre><code>docker run \
   -v ./config.yaml:/app/config.yaml \
   -v ./state.json:/app/state.json \
-  security-stack-notifier</code></pre>
+  security-stack-notifier
+
+# or cron (every 30 minutes)
+*/30 * * * * cd /path/to/signl && /path/to/signl/.venv/bin/python -m src.main --config ./config.yaml --once \
+  >> /path/to/signl/signl.log 2>&1</code></pre>
           </div>
         </div>
       </section>
@@ -131,20 +135,52 @@ export DISCORD_WEBHOOK_URL="https://discord.com/api/webhooks/..."</code></pre>
         <div class="config-grid">
           <div class="panel">
             <h3>Example config.yaml</h3>
-            <pre><code>stack:
+            <pre><code>version: 1
+
+stack:
   cloud:
     - azure
     - aws
+    - gcp
+
+  languages:
+    - python
+    - javascript
+    - typescript
+    - powershell
+    - go
 
   packages:
     npm:
+      - axios
+      - react
       - lodash
+      - express
     pip:
       - requests
+      - django
+      - flask
+      - pydantic
+      - azure-identity
+    go:
+      - gin
+      - cobra
 
   services:
+    - entra-id
+    - intune
+    - azure-sentinel
     - kubernetes
+    - docker
+    - postgresql
     - redis
+
+  keywords:
+    - kerberos
+    - ntlm
+    - active directory
+    - oauth
+    - saml
 
 notifications:
   discord:
@@ -152,7 +188,11 @@ notifications:
 
 settings:
   poll_interval_minutes: 15
-  state_file: "./state.json"</code></pre>
+  state_file: "./state.json"
+  include_low_severity: false
+  max_results_per_feed: 200
+  request_timeout_seconds: 20
+  user_agent: "security-stack-notifier/0.1"</code></pre>
           </div>
           <div class="panel">
             <h3>Match logic</h3>
