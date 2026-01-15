@@ -41,6 +41,7 @@ See `config.example.yaml` for the full schema. Key sections:
 - `notifications.slack.webhook_url`: Slack webhook (primary)
 - `notifications.discord.webhook_url`: Discord webhook (testing/optional)
 - `feeds`: enable/disable sources and RSS lists
+- Feed sources can be disabled by setting the `feeds.*` flag to `false`.
 - `settings`: poll interval, state file path, timeouts, user agent
 
 ## Deployment
@@ -48,6 +49,12 @@ See `config.example.yaml` for the full schema. Key sections:
 - Cron: run with `--once` every N minutes.
 - Docker: mount `config.yaml` and `state.json` into `/app`.
 - systemd: run `python -m src.main` as a service.
+
+## Troubleshooting
+
+- No alerts: delete `state.json` to re-scan the last 24 hours.
+- GitHub rate limit: set `GITHUB_TOKEN` or disable the GitHub feed.
+- PEP 668 error: use a virtual environment before `pip install`.
 
 ## Extending Feeds
 

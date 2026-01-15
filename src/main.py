@@ -31,7 +31,11 @@ async def main() -> None:
     if not args.dry_run and not (
         config.notifications.slack_webhook_url or config.notifications.discord_webhook_url
     ):
-        raise SystemExit("Slack or Discord webhook URL is required unless --dry-run is set")
+        raise SystemExit(
+            "Slack or Discord webhook URL is required unless --dry-run is set. "
+            "Set notifications.slack.webhook_url or notifications.discord.webhook_url in config.yaml "
+            "and export the env var in the same shell."
+        )
 
     state = load_state(config.settings.state_file)
 
@@ -222,6 +226,8 @@ async def _poll_once(feeds, notifier, config, state, dry_run: bool) -> None:
             continue
         items.extend(feed_result)
 
+    matched_count = 0
+    notified_count = 0
     for item in sorted(items, key=lambda x: _normalize_dt(x.published)):
         if was_sent(state, item.id):
             continue
@@ -233,6 +239,7 @@ async def _poll_once(feeds, notifier, config, state, dry_run: bool) -> None:
             continue
 
         if dry_run:
+            matched_count += 1
             logger.info("[dry-run] Match: %s (%s)", item.id, "; ".join(reasons))
             mark_sent(state, item.id)
             continue
@@ -250,9 +257,14 @@ async def _poll_once(feeds, notifier, config, state, dry_run: bool) -> None:
         if sent:
             logger.info("Notified for %s", item.id)
             mark_sent(state, item.id)
+            notified_count += 1
 
     state.last_poll = datetime.now(timezone.utc)
     prune_sent(state)
+    if dry_run:
+        logger.info("Dry-run complete: %s matches", matched_count)
+    else:
+        logger.info("Poll complete: %s matches, %s notified", matched_count, notified_count)
 
 
 def _is_low_severity(item) -> bool:

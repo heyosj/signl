@@ -50,15 +50,15 @@ notifications:
     webhook_url: "${DISCORD_WEBHOOK_URL}"
 
 feeds:
-  nvd: true
-  github: true
-  msrc: true
+  nvd: true # set false to disable
+  github: true # set false to disable
+  msrc: true # set false to disable
   cisa:
-    enabled: true
+    enabled: true # set false to disable
   osv:
-    enabled: true
+    enabled: true # set false to disable
   hackernews:
-    enabled: true
+    enabled: true # set false to disable
     max_terms: 6
   rss:
     - name: "Microsoft Security Response Center"

@@ -455,6 +455,10 @@ pre {
   margin-top: 12px;
 }
 
+.faq-card pre {
+  margin-top: 12px;
+}
+
 .orb {
   position: absolute;
   border-radius: 50%;

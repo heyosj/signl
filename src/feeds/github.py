@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 import logging
+import os
 from typing import Any
 
 import httpx
@@ -34,6 +35,9 @@ class GitHubFeed(BaseFeed):
             "Accept": "application/vnd.github+json",
             "User-Agent": self._settings.user_agent,
         }
+        token = os.getenv("GITHUB_TOKEN")
+        if token:
+            headers["Authorization"] = f"Bearer {token}"
 
         page = 1
         per_page = min(self._settings.max_results, 100)
@@ -52,7 +56,10 @@ class GitHubFeed(BaseFeed):
                 response = await client.get(GITHUB_ADVISORIES_ENDPOINT, headers=headers, params=params)
                 if response.status_code == 403 and "rate limit" in response.text.lower():
                     reset = response.headers.get("X-RateLimit-Reset")
-                    self._logger.warning("GitHub rate limit hit; reset at %s", reset or "unknown")
+                    self._logger.warning(
+                        "GitHub rate limit hit; reset at %s (set GITHUB_TOKEN to raise limits)",
+                        reset or "unknown",
+                    )
                     break
                 response.raise_for_status()
                 payload = response.json()

@@ -331,12 +331,52 @@ export default function Home() {
               signl stores the last poll time in <strong>state.json</strong>. If
               you are testing, delete it to re-scan the full 24-hour window.
             </p>
+            <pre>
+              <code>{`rm -f state.json`}</code>
+            </pre>
           </details>
           <details className="faq-card">
             <summary>How do I verify my webhook works?</summary>
             <p>
               Run <strong>--test-notify</strong> to send a synthetic alert and
               confirm Slack or Discord delivery.
+            </p>
+            <pre>
+              <code>{`python -m src.main --config ./config.yaml --test-notify`}</code>
+            </pre>
+          </details>
+          <details className="faq-card">
+            <summary>Pip says externally-managed-environment (PEP 668)</summary>
+            <p>
+              Use a virtual environment before installing dependencies to avoid
+              system Python conflicts.
+            </p>
+            <pre>
+              <code>
+                {`python3 -m venv .venv\nsource .venv/bin/activate\npip install -r requirements.txt`}
+              </code>
+            </pre>
+          </details>
+          <details className="faq-card">
+            <summary>GitHub rate limit hit</summary>
+            <p>
+              GitHub advisories are rate limited. Set <strong>GITHUB_TOKEN</strong>
+              or disable the GitHub feed in config.
+            </p>
+          </details>
+          <details className="faq-card">
+            <summary>Can I disable specific feeds?</summary>
+            <p>
+              Yes. Set <strong>feeds.github</strong>, <strong>feeds.nvd</strong>,
+              <strong>feeds.msrc</strong>, or nested <strong>enabled</strong> flags
+              to false in <strong>config.yaml</strong>.
+            </p>
+          </details>
+          <details className="faq-card">
+            <summary>No alerts showing up</summary>
+            <p>
+              Alerts only fire on matches. Add a broad keyword (like
+              <strong> azure</strong>) for testing, then remove it later.
             </p>
           </details>
         </div>
