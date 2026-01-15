@@ -4,6 +4,7 @@ import argparse
 import asyncio
 from datetime import datetime, timezone
 import logging
+from pathlib import Path
 
 from .config import load_config
 from .feeds.cisa import CISAFeed, CISASettings
@@ -21,6 +22,9 @@ from .state import load_state, mark_sent, prune_sent, save_state, was_sent
 
 async def main() -> None:
     args = _parse_args()
+    if args.init_config:
+        _init_config(Path(args.config))
+        return
     config = load_config(args.config)
     _configure_logging(args.verbose)
 
@@ -48,6 +52,7 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--once", action="store_true")
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--verbose", action="store_true")
+    parser.add_argument("--init-config", action="store_true", help="Create a config.yaml template and exit")
     return parser.parse_args()
 
 
@@ -141,6 +146,17 @@ def _build_feeds(config):
         )
 
     return feeds
+
+
+def _init_config(target: Path) -> None:
+    if target.exists():
+        raise SystemExit(f"Config already exists at {target}")
+    root = Path(__file__).resolve().parents[1]
+    template = root / "config.example.yaml"
+    if not template.exists():
+        raise SystemExit("config.example.yaml not found")
+    target.write_text(template.read_text(encoding="utf-8"), encoding="utf-8")
+    print(f"Wrote config template to {target}")
 
 
 def _build_hn_terms(config, max_terms: int) -> list[str]:

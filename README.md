@@ -16,7 +16,7 @@ Sources included (free):
 1. Copy and edit the config:
 
 ```
-cp config.example.yaml config.yaml
+python -m src.main --init-config --config ./config.yaml
 ```
 
 2. Set your Discord webhook:

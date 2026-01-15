@@ -173,7 +173,7 @@ export default function Home() {
               </p>
               <pre>
                 <code>
-                  {`touch config.yaml\n${envCommand}\npython -m src.main --config ./config.yaml --once`}
+                  {`python -m src.main --init-config --config ./config.yaml\n${envCommand}\npython -m src.main --config ./config.yaml --once`}
                 </code>
               </pre>
             </div>

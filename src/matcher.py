@@ -60,5 +60,15 @@ def calculate_relevance(item: FeedItem, config: StackConfig) -> tuple[bool, list
         if _contains_token(text, token):
             reasons.append(f"Keyword match: {keyword}")
 
+    for language in config.languages:
+        token = language.lower()
+        if _contains_token(text, token):
+            reasons.append(f"Language match: {language}")
+
+    for provider in config.cloud:
+        token = provider.lower()
+        if _contains_token(text, token):
+            reasons.append(f"Cloud match: {provider}")
+
     reasons = sorted(set(reasons))
     return (len(reasons) > 0, reasons)
