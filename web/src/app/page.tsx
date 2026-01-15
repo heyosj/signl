@@ -284,12 +284,12 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="section">
-          <div className="section-title">
-            <p className="eyebrow">Architecture</p>
-            <h2>Lean by design.</h2>
-          </div>
-          <div className="arch">
+      <section className="section">
+        <div className="section-title">
+          <p className="eyebrow">Architecture</p>
+          <h2>Lean by design.</h2>
+        </div>
+        <div className="arch">
             <div>
               <h3>Feeds</h3>
               <p>
@@ -309,8 +309,38 @@ export default function Home() {
               <h3>State</h3>
               <p>Local JSON store prevents duplicate alerts.</p>
             </div>
-          </div>
-        </section>
+        </div>
+      </section>
+
+      <section className="section faq">
+        <div className="section-title">
+          <p className="eyebrow">FAQ</p>
+          <h2>Quick answers for testing + setup.</h2>
+        </div>
+        <div className="faq-grid">
+          <details className="faq-card">
+            <summary>Why did nothing happen on dry run?</summary>
+            <p>
+              signl only prints when an item matches your stack. If there are no
+              matches in the last 24 hours, you will see no output.
+            </p>
+          </details>
+          <details className="faq-card">
+            <summary>What is state.json and why does it matter?</summary>
+            <p>
+              signl stores the last poll time in <strong>state.json</strong>. If
+              you are testing, delete it to re-scan the full 24-hour window.
+            </p>
+          </details>
+          <details className="faq-card">
+            <summary>How do I verify my webhook works?</summary>
+            <p>
+              Run <strong>--test-notify</strong> to send a synthetic alert and
+              confirm Slack or Discord delivery.
+            </p>
+          </details>
+        </div>
+      </section>
       </main>
 
       <footer className="footer">

@@ -38,6 +38,12 @@ async def main() -> None:
     feeds = _build_feeds(config)
     notifier = _build_notifier(config)
 
+    if args.test_notify:
+        if notifier is None:
+            raise SystemExit("Slack or Discord webhook URL is required for --test-notify")
+        await notifier.send(_build_test_item(), ["Test notification"])
+        return
+
     while True:
         await _poll_once(feeds, notifier, config, state, dry_run=args.dry_run)
         save_state(config.settings.state_file, state)
@@ -53,6 +59,7 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--verbose", action="store_true")
     parser.add_argument("--init-config", action="store_true", help="Create a config.yaml template and exit")
+    parser.add_argument("--test-notify", action="store_true", help="Send a test notification and exit")
     return parser.parse_args()
 
 
@@ -258,6 +265,24 @@ def _normalize_dt(value: datetime) -> datetime:
     if value.tzinfo is None:
         return value.replace(tzinfo=timezone.utc)
     return value
+
+
+def _build_test_item():
+    from .feeds.base import FeedItem
+
+    now = datetime.now(timezone.utc)
+    return FeedItem(
+        id=f"test:{int(now.timestamp())}",
+        source="test",
+        title="signl test alert: webhook verified",
+        description="This is a synthetic test notification to verify your webhook.",
+        url="https://github.com/heyosj/signl",
+        published=now,
+        severity="low",
+        cvss_score=3.1,
+        affected_packages=[],
+        raw_data={},
+    )
 
 
 if __name__ == "__main__":

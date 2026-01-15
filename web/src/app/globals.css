@@ -428,6 +428,33 @@ pre {
   font-size: 0.85rem;
 }
 
+.faq {
+  padding-top: 40px;
+}
+
+.faq-grid {
+  display: grid;
+  gap: 16px;
+  max-width: 820px;
+}
+
+.faq-card {
+  background: var(--card);
+  padding: 18px 20px;
+  border-radius: 16px;
+  box-shadow: 0 12px 24px rgba(12, 12, 12, 0.08);
+}
+
+.faq-card summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.faq-card p {
+  margin-top: 12px;
+}
+
 .orb {
   position: absolute;
   border-radius: 50%;
