@@ -120,8 +120,8 @@ def load_config(path: str) -> Config:
     discord_raw = _require_dict(notifications_raw.get("discord"), "notifications.discord")
     slack_raw = _require_dict(notifications_raw.get("slack"), "notifications.slack")
     notifications = NotificationConfig(
-        discord_webhook_url=discord_raw.get("webhook_url"),
-        slack_webhook_url=slack_raw.get("webhook_url"),
+        discord_webhook_url=_normalize_webhook(discord_raw.get("webhook_url")),
+        slack_webhook_url=_normalize_webhook(slack_raw.get("webhook_url")),
     )
 
     settings_raw = _require_dict(data.get("settings"), "settings")
@@ -192,3 +192,13 @@ def _normalize_packages(value: Any) -> dict[str, list[str]]:
             raise ValueError(f"stack.packages.{ecosystem} must be a list")
         normalized[str(ecosystem)] = [str(item) for item in names]
     return normalized
+
+
+def _normalize_webhook(value: Any) -> str | None:
+    if not value or not isinstance(value, str):
+        return None
+    if "${" in value:
+        return None
+    if not (value.startswith("http://") or value.startswith("https://")):
+        return None
+    return value
