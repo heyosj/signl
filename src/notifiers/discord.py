@@ -52,7 +52,7 @@ class DiscordNotifier(BaseNotifier):
 
 def _build_payload(message: NotificationMessage, metadata: NotificationMetadata) -> dict[str, Any]:
     severity = message.priority.lower()
-    color = SEVERITY_COLORS.get(severity, SEVERITY_COLORS["low"])
+    color = SEVERITY_COLORS.get(severity, SEVERITY_COLORS["p3"])
     description = message.summary
     if len(description) > 400:
         description = description[:397] + "..."

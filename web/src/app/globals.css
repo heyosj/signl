@@ -148,6 +148,108 @@ a {
   position: relative;
   overflow: hidden;
   animation: float 6s ease-in-out infinite;
+  min-height: 420px;
+}
+
+.hero-alerts {
+  position: relative;
+  min-height: 280px;
+}
+
+.hero-alert {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  opacity: 0;
+  transform: translateY(8px);
+  animation: alertSwap 10s ease-in-out infinite;
+  border-left: 4px solid transparent;
+  padding-left: 16px;
+}
+
+.hero-alert.discord {
+  animation-delay: 5s;
+  border-left-color: #5865f2;
+}
+
+.hero-alert.slack {
+  border-left-color: #2eb67d;
+}
+
+.hero-alert-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.hero-alert-brand {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(11, 14, 17, 0.08);
+  color: var(--muted);
+}
+
+.hero-alert.slack .hero-alert-brand {
+  background: rgba(46, 182, 125, 0.15);
+  color: #1b6b4b;
+}
+
+.hero-alert.discord .hero-alert-brand {
+  background: rgba(88, 101, 242, 0.15);
+  color: #2f3bb8;
+}
+
+.hero-alert-priority {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(231, 76, 60, 0.12);
+  color: #c0392b;
+}
+
+.hero-alert-summary {
+  color: var(--muted);
+  margin: 0;
+}
+
+.hero-alert-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 16px;
+}
+
+.hero-alert-wide {
+  grid-column: 1 / -1;
+}
+
+.hero-alert-label {
+  display: block;
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.hero-alert-value {
+  display: block;
+  font-weight: 600;
+  color: var(--ink);
+  margin-top: 4px;
+}
+
+.hero-alert-reason {
+  background: #f6efe6;
+  padding: 12px 14px;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  color: var(--muted);
 }
 
 .card-header {
@@ -186,6 +288,24 @@ a {
   padding: 14px;
   border-radius: 14px;
   font-size: 0.9rem;
+}
+
+@keyframes alertSwap {
+  0%,
+  8% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  16%,
+  46% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  54%,
+  100% {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
 }
 
 .section {

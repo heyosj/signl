@@ -118,23 +118,66 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="hero-card">
+        <div className="hero-card">
             <div className="card-header">
               <span>Live match</span>
               <span className="pill">Matched</span>
             </div>
-            <h3>CVE-2024-XXXXX: Critical in lodash</h3>
-            <p>
-              Prototype pollution vulnerability allowing remote code execution on
-              affected versions.
-            </p>
-            <div className="chip-row">
-              <span className="chip">Package: lodash</span>
-              <span className="chip">Priority: P0 (92)</span>
-              <span className="chip">Source: NVD</span>
-            </div>
-            <div className="reason">
-              Why you are seeing this: Direct dependency match
+            <div className="hero-alerts" aria-live="polite">
+              <div className="hero-alert slack">
+                <div className="hero-alert-top">
+                  <span className="hero-alert-brand">Slack</span>
+                  <span className="hero-alert-priority">P0 92</span>
+                </div>
+                <h3>CVE-2024-XXXXX: Prototype pollution in lodash</h3>
+                <p className="hero-alert-summary">
+                  Remote code execution on affected versions.
+                </p>
+                <div className="hero-alert-fields">
+                  <div>
+                    <span className="hero-alert-label">Source</span>
+                    <span className="hero-alert-value">NVD</span>
+                  </div>
+                  <div>
+                    <span className="hero-alert-label">Priority</span>
+                    <span className="hero-alert-value">P0 (92)</span>
+                  </div>
+                  <div className="hero-alert-wide">
+                    <span className="hero-alert-label">Affected</span>
+                    <span className="hero-alert-value">lodash</span>
+                  </div>
+                </div>
+                <div className="hero-alert-reason">
+                  Why you&apos;re seeing this: direct dependency match.
+                </div>
+              </div>
+              <div className="hero-alert discord">
+                <div className="hero-alert-top">
+                  <span className="hero-alert-brand">Discord</span>
+                  <span className="hero-alert-priority">P2 58</span>
+                </div>
+                <h3>GHSA-xxxx-yyyy: SSRF in requests</h3>
+                <p className="hero-alert-summary">
+                  Server-side request forgery in a popular HTTP client.
+                </p>
+                <div className="hero-alert-fields">
+                  <div>
+                    <span className="hero-alert-label">Source</span>
+                    <span className="hero-alert-value">GitHub</span>
+                  </div>
+                  <div>
+                    <span className="hero-alert-label">Priority</span>
+                    <span className="hero-alert-value">P2 (58)</span>
+                  </div>
+                  <div className="hero-alert-wide">
+                    <span className="hero-alert-label">Affected</span>
+                    <span className="hero-alert-value">requests</span>
+                  </div>
+                </div>
+                <div className="hero-alert-reason">
+                  Why you&apos;re seeing this: transitive dependency match.
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -390,7 +433,8 @@ export default function Home() {
             <summary>How do I verify my webhook works?</summary>
             <p>
               Run <strong>--test-notify</strong> to send a synthetic alert and
-              confirm Slack or Discord delivery.
+              confirm Slack or Discord delivery. Command:
+              <strong> python -m src.main --config ./config.yaml --test-notify</strong>.
             </p>
             <pre>
               <code>{`python -m src.main --config ./config.yaml --test-notify`}</code>

@@ -51,18 +51,57 @@
             <span>Live match</span>
             <span class="pill">Matched</span>
           </div>
-          <h3>CVE-2024-XXXXX: Critical in lodash</h3>
-          <p>
-            Prototype pollution vulnerability allowing remote code execution on
-            affected versions.
-          </p>
-          <div class="chip-row">
-            <span class="chip">Package: lodash</span>
-            <span class="chip">Severity: Critical (9.8)</span>
-            <span class="chip">Source: NVD</span>
-          </div>
-          <div class="reason">
-            Why you are seeing this: Package match: lodash
+          <div class="hero-alerts" aria-live="polite">
+            <div class="hero-alert slack">
+              <div class="hero-alert-top">
+                <span class="hero-alert-brand">Slack</span>
+                <span class="hero-alert-priority">P0 92</span>
+              </div>
+              <h3>CVE-2024-XXXXX: Prototype pollution in lodash</h3>
+              <p class="hero-alert-summary">Remote code execution on affected versions.</p>
+              <div class="hero-alert-fields">
+                <div>
+                  <span class="hero-alert-label">Source</span>
+                  <span class="hero-alert-value">NVD</span>
+                </div>
+                <div>
+                  <span class="hero-alert-label">Priority</span>
+                  <span class="hero-alert-value">P0 (92)</span>
+                </div>
+                <div class="hero-alert-wide">
+                  <span class="hero-alert-label">Affected</span>
+                  <span class="hero-alert-value">lodash</span>
+                </div>
+              </div>
+              <div class="hero-alert-reason">
+                Why you're seeing this: direct dependency match.
+              </div>
+            </div>
+            <div class="hero-alert discord">
+              <div class="hero-alert-top">
+                <span class="hero-alert-brand">Discord</span>
+                <span class="hero-alert-priority">P2 58</span>
+              </div>
+              <h3>GHSA-xxxx-yyyy: SSRF in requests</h3>
+              <p class="hero-alert-summary">Server-side request forgery in a popular HTTP client.</p>
+              <div class="hero-alert-fields">
+                <div>
+                  <span class="hero-alert-label">Source</span>
+                  <span class="hero-alert-value">GitHub</span>
+                </div>
+                <div>
+                  <span class="hero-alert-label">Priority</span>
+                  <span class="hero-alert-value">P2 (58)</span>
+                </div>
+                <div class="hero-alert-wide">
+                  <span class="hero-alert-label">Affected</span>
+                  <span class="hero-alert-value">requests</span>
+                </div>
+              </div>
+              <div class="hero-alert-reason">
+                Why you're seeing this: transitive dependency match.
+              </div>
+            </div>
           </div>
         </div>
       </div>
