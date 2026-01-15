@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import timezone
 import logging
-import time
+import asyncio
 from typing import Any
 
 import httpx
@@ -42,7 +42,7 @@ class DiscordNotifier(BaseNotifier):
                 if response.status_code == 429:
                     retry_after = _retry_after(response)
                     self._logger.warning("Discord rate limit hit, sleeping %.2fs", retry_after)
-                    time.sleep(retry_after)
+                    await asyncio.sleep(retry_after)
                     continue
                 if 200 <= response.status_code < 300:
                     return True
@@ -94,9 +94,19 @@ def _build_payload(message: NotificationMessage, metadata: NotificationMetadata)
 
 
 def _retry_after(response: httpx.Response) -> float:
-    value = response.headers.get("Retry-After")
+    value = response.headers.get("Retry-After") or response.headers.get("X-RateLimit-Reset-After")
     if not value:
-        return 1.0
+        try:
+            data = response.json()
+        except ValueError:
+            return 1.0
+        retry_after = data.get("retry_after")
+        if retry_after is None:
+            return 1.0
+        try:
+            return float(retry_after)
+        except (TypeError, ValueError):
+            return 1.0
     try:
         return float(value)
     except ValueError:
