@@ -233,6 +233,8 @@ async def _poll_once(feeds, notifier, config, state, dry_run: bool) -> None:
             continue
         if not config.settings.include_low_severity and _is_low_severity(item):
             continue
+        if _below_min_cvss(item, config.settings.min_cvss_score):
+            continue
 
         is_relevant, reasons = calculate_relevance(item, config.stack)
         if not is_relevant:
@@ -277,6 +279,12 @@ def _is_low_severity(item) -> bool:
     if item.cvss_score is None:
         return False
     return item.cvss_score < 4.0
+
+
+def _below_min_cvss(item, min_score: float | None) -> bool:
+    if min_score is None or item.cvss_score is None:
+        return False
+    return item.cvss_score < min_score
 
 
 def _normalize_dt(value: datetime) -> datetime:

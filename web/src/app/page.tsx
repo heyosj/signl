@@ -48,6 +48,7 @@ export default function Home() {
     "  poll_interval_minutes: 15",
     "  state_file: \"./state.json\"",
     "  max_notifications_per_run: 10",
+    "  min_cvss_score: 7.0",
   ].join("\n");
 
   return (
@@ -395,6 +396,16 @@ export default function Home() {
             </p>
             <pre>
               <code>{`settings:\n  max_notifications_per_run: 10`}</code>
+            </pre>
+          </details>
+          <details className="faq-card">
+            <summary>Can I filter by severity?</summary>
+            <p>
+              Yes. Set <strong>settings.min_cvss_score</strong> to only alert on
+              items at or above the score you choose.
+            </p>
+            <pre>
+              <code>{`settings:\n  min_cvss_score: 7.0`}</code>
             </pre>
           </details>
           <details className="faq-card">

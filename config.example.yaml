@@ -90,3 +90,4 @@ settings:
   request_timeout_seconds: 20
   user_agent: "signl/0.1"
   max_notifications_per_run: 25
+  min_cvss_score: 7.0
