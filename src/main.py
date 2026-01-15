@@ -1,5 +1,10 @@
 from __future__ import annotations
 
+# Plan:
+# 1) Load config + dependency graph and normalize alerts with match/scoring.
+# 2) Score matches, group by priority, and send via selected notifiers.
+# 3) Preserve legacy config behavior with warnings and safe defaults.
+
 import argparse
 import asyncio
 from datetime import datetime, timezone
@@ -7,6 +12,7 @@ import logging
 from pathlib import Path
 
 from .config import load_config
+from .dependencies import DependenciesConfig, DependencySource, load_dependency_graph
 from .feeds.cisa import CISAFeed, CISASettings
 from .feeds.github import GitHubFeed, GitHubSettings
 from .feeds.hackernews import HackerNewsFeed, HackerNewsSettings
@@ -15,9 +21,9 @@ from .feeds.nvd import NVDFeed, NVDSettings
 from .feeds.osv import OSVFeed, OSVSettings
 from .feeds.rss import RSSFeed, RSSSettings, RSSSource
 from .matcher import calculate_relevance
-from .notifiers.discord import DiscordNotifier, DiscordSettings
-from .notifiers.slack import SlackNotifier, SlackSettings
+from .notifiers.factory import build_notifiers, build_notification_message
 from .state import load_state, mark_sent, prune_sent, save_state, was_sent
+from .scoring import score_alert
 
 
 async def main() -> None:
@@ -28,28 +34,36 @@ async def main() -> None:
     config = load_config(args.config)
     _configure_logging(args.verbose)
 
-    if not args.dry_run and not (
-        config.notifications.slack_webhook_url or config.notifications.discord_webhook_url
-    ):
-        raise SystemExit(
-            "Slack or Discord webhook URL is required unless --dry-run is set. "
-            "Set notifications.slack.webhook_url or notifications.discord.webhook_url in config.yaml "
-            "and export the env var in the same shell."
-        )
-
     state = load_state(config.settings.state_file)
 
     feeds = _build_feeds(config)
-    notifier = _build_notifier(config)
+    notifiers = build_notifiers(config)
+    dependency_graph = _build_dependency_graph(config, Path(args.config))
+    if not args.dry_run and not notifiers:
+        raise SystemExit(
+            "At least one notifier is required unless --dry-run is set. "
+            "Set notify entries in config.yaml or configure notifications.slack/discord."
+        )
 
     if args.test_notify:
-        if notifier is None:
-            raise SystemExit("Slack or Discord webhook URL is required for --test-notify")
-        await notifier.send(_build_test_item(), ["Test notification"])
+        if not notifiers:
+            raise SystemExit("At least one notifier is required for --test-notify")
+        message, metadata = build_notification_message(
+            _build_test_item(), ["Test notification"], None, None
+        )
+        for notifier in notifiers:
+            await notifier.send(message, metadata)
         return
 
     while True:
-        await _poll_once(feeds, notifier, config, state, dry_run=args.dry_run)
+        await _poll_once(
+            feeds,
+            notifiers,
+            config,
+            state,
+            dependency_graph,
+            dry_run=args.dry_run,
+        )
         save_state(config.settings.state_file, state)
         if args.once:
             break
@@ -192,27 +206,22 @@ def _build_hn_terms(config, max_terms: int) -> list[str]:
     return terms
 
 
-def _build_notifier(config):
-    if config.notifications.slack_webhook_url:
-        return SlackNotifier(
-            SlackSettings(
-                webhook_url=config.notifications.slack_webhook_url,
-                timeout_seconds=config.settings.request_timeout_seconds,
-                user_agent=config.settings.user_agent,
-            )
-        )
-    if config.notifications.discord_webhook_url:
-        return DiscordNotifier(
-            DiscordSettings(
-                webhook_url=config.notifications.discord_webhook_url,
-                timeout_seconds=config.settings.request_timeout_seconds,
-                user_agent=config.settings.user_agent,
-            )
-        )
-    return None
+def _build_dependency_graph(config, config_path: Path):
+    deps = config.stack.deps
+    deps_config = DependenciesConfig(
+        enabled=deps.enabled,
+        sources=[DependencySource(type=item.type, path=item.path) for item in deps.sources],
+        include_transitive=deps.include_transitive,
+        ecosystems=deps.ecosystems,
+    )
+    return load_dependency_graph(
+        deps_config,
+        base_dir=config_path.parent,
+        normalize_names=config.stack.match.normalize_names,
+    )
 
 
-async def _poll_once(feeds, notifier, config, state, dry_run: bool) -> None:
+async def _poll_once(feeds, notifiers, config, state, dependencies, dry_run: bool) -> None:
     logger = logging.getLogger(__name__)
     since = state.last_poll
 
@@ -228,6 +237,7 @@ async def _poll_once(feeds, notifier, config, state, dry_run: bool) -> None:
 
     matched_count = 0
     notified_count = 0
+    candidates = []
     for item in sorted(items, key=lambda x: _normalize_dt(x.published)):
         if was_sent(state, item.id):
             continue
@@ -236,36 +246,44 @@ async def _poll_once(feeds, notifier, config, state, dry_run: bool) -> None:
         if _below_min_cvss(item, config.settings.min_cvss_score):
             continue
 
-        is_relevant, reasons = calculate_relevance(item, config.stack)
-        if not is_relevant:
+        match = calculate_relevance(item, config.stack, dependencies)
+        if not match.is_relevant:
             continue
 
+        matched_count += 1
         if dry_run:
-            matched_count += 1
-            logger.info("[dry-run] Match: %s (%s)", item.id, "; ".join(reasons))
+            logger.info("[dry-run] Match: %s (%s)", item.id, "; ".join(match.reasons))
             mark_sent(state, item.id)
             continue
 
-        if notifier is None:
-            logger.warning("No notifier configured; skipping %s", item.id)
-            continue
+        score = score_alert(item, match, config.scoring, config.stack)
+        message, metadata = build_notification_message(item, match.reasons, match, score)
+        candidates.append((message, metadata, item))
 
-        try:
-            sent = await notifier.send(item, reasons)
-        except Exception as exc:
-            logger.error("Notifier failed for %s: %s", item.id, exc)
-            sent = False
-
-        if sent:
-            logger.info("Notified for %s", item.id)
-            mark_sent(state, item.id)
-            notified_count += 1
-            if notified_count >= config.settings.max_notifications_per_run:
-                logger.warning(
-                    "Reached max_notifications_per_run=%s; stopping early",
-                    config.settings.max_notifications_per_run,
-                )
-                break
+    if not dry_run and candidates:
+        candidates.sort(key=lambda entry: _priority_sort(entry[0].priority, entry[0].published))
+        for message, metadata, item in candidates:
+            if not notifiers:
+                logger.warning("No notifier configured; skipping %s", item.id)
+                continue
+            sent = True
+            for notifier in notifiers:
+                try:
+                    success = await notifier.send(message, metadata)
+                except Exception as exc:
+                    logger.error("Notifier failed for %s: %s", item.id, exc)
+                    success = False
+                sent = sent and success
+            if sent:
+                logger.info("Notified for %s", item.id)
+                mark_sent(state, item.id)
+                notified_count += 1
+                if notified_count >= config.settings.max_notifications_per_run:
+                    logger.warning(
+                        "Reached max_notifications_per_run=%s; stopping early",
+                        config.settings.max_notifications_per_run,
+                    )
+                    break
 
     state.last_poll = datetime.now(timezone.utc)
     prune_sent(state)
@@ -291,6 +309,11 @@ def _normalize_dt(value: datetime) -> datetime:
     if value.tzinfo is None:
         return value.replace(tzinfo=timezone.utc)
     return value
+
+
+def _priority_sort(priority: str, published: datetime) -> tuple[int, datetime]:
+    order = {"P0": 0, "P1": 1, "P2": 2, "P3": 3}
+    return (order.get(priority, 9), _normalize_dt(published))
 
 
 def _build_test_item():

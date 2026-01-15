@@ -43,6 +43,46 @@ stack:
     - oauth
     - saml
 
+  deps:
+    enabled: false
+    include_transitive: true
+    ecosystems: ["npm", "pip"]
+    sources:
+      - type: manifest
+        path: ./package.json
+      - type: lockfile
+        path: ./package-lock.json
+      - type: manifest
+        path: ./requirements.txt
+      - type: lockfile
+        path: ./poetry.lock
+
+  match:
+    mode: loose
+    synonyms: true
+    normalize_names: true
+
+  synonyms:
+    kubernetes: ["k8s", "aks", "eks", "gke"]
+
+  asset_criticality:
+    services:
+      kubernetes: 1.5
+    packages:
+      requests: 1.2
+
+# New multi-notifier list (preferred)
+notify:
+  - type: slack
+    webhook_url: "${SLACK_WEBHOOK_URL}"
+  - type: discord
+    webhook_url: "${DISCORD_WEBHOOK_URL}"
+  - type: webhook
+    url: "${WEBHOOK_URL}"
+    headers:
+      Authorization: "Bearer ${WEBHOOK_TOKEN}"
+
+# Legacy single notifier config (still supported)
 notifications:
   slack:
     webhook_url: "${SLACK_WEBHOOK_URL}"
@@ -91,3 +131,24 @@ settings:
   user_agent: "signl/0.1"
   max_notifications_per_run: 25
   min_cvss_score: 7.0
+
+scoring:
+  enabled: true
+  weights:
+    severity: 0.45
+    exploitability: 0.25
+    relevance: 0.2
+    recency: 0.1
+  thresholds:
+    P0: 85
+    P1: 70
+    P2: 50
+    P3: 0
+  prefer_sources: ["cisa", "msrc", "nvd", "osv", "github"]
+  keywords:
+    exploited_in_wild:
+      - "exploited in the wild"
+      - "active exploitation"
+    poc:
+      - "proof of concept"
+      - "poc"

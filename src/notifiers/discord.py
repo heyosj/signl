@@ -9,14 +9,14 @@ from typing import Any
 import httpx
 
 from .base import BaseNotifier
-from ..feeds.base import FeedItem
+from .message import NotificationMessage, NotificationMetadata
 
 
 SEVERITY_COLORS = {
-    "critical": 0xE74C3C,
-    "high": 0xE67E22,
-    "medium": 0xF1C40F,
-    "low": 0x95A5A6,
+    "p0": 0xE74C3C,
+    "p1": 0xE67E22,
+    "p2": 0xF1C40F,
+    "p3": 0x95A5A6,
 }
 
 
@@ -32,8 +32,8 @@ class DiscordNotifier(BaseNotifier):
         self._settings = settings
         self._logger = logging.getLogger(__name__)
 
-    async def send(self, item: FeedItem, reasons: list[str]) -> bool:
-        payload = _build_payload(item, reasons)
+    async def send(self, message: NotificationMessage, metadata: NotificationMetadata) -> bool:
+        payload = _build_payload(message, metadata)
         headers = {"User-Agent": self._settings.user_agent}
 
         async with httpx.AsyncClient(timeout=self._settings.timeout_seconds) as client:
@@ -50,54 +50,47 @@ class DiscordNotifier(BaseNotifier):
             return False
 
 
-def _build_payload(item: FeedItem, reasons: list[str]) -> dict[str, Any]:
-    severity = (item.severity or "").lower()
+def _build_payload(message: NotificationMessage, metadata: NotificationMetadata) -> dict[str, Any]:
+    severity = message.priority.lower()
     color = SEVERITY_COLORS.get(severity, SEVERITY_COLORS["low"])
-    description = item.description
+    description = message.summary
     if len(description) > 400:
         description = description[:397] + "..."
 
     fields = [
         {
-            "name": "Severity",
-            "value": _format_severity(item.severity, item.cvss_score),
+            "name": "Priority",
+            "value": f"{message.priority} ({message.score})",
             "inline": True,
         },
-        {"name": "Source", "value": item.source.upper(), "inline": True},
+        {"name": "Source", "value": message.source.upper(), "inline": True},
     ]
 
-    if item.affected_packages:
-        packages = ", ".join(item.affected_packages[:10])
+    if message.affected.get("packages"):
+        packages = ", ".join(message.affected.get("packages", [])[:10])
         fields.append({"name": "Affected", "value": packages, "inline": False})
 
-    if reasons:
-        reason_text = "\n".join(reasons[:5])
+    if metadata.reasons:
+        reason_text = "\n".join(metadata.reasons[:5])
         fields.append({"name": "Why you're seeing this", "value": reason_text, "inline": False})
 
-    timestamp = item.published.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
+    if metadata.rationale:
+        fields.append({"name": "Scoring", "value": "\n".join(metadata.rationale[:2]), "inline": False})
+
+    timestamp = message.published.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
 
     return {
         "embeds": [
             {
-                "title": item.title,
+                "title": message.title,
                 "description": description,
-                "url": item.url,
+                "url": message.url,
                 "color": color,
                 "fields": fields,
                 "timestamp": timestamp,
             }
         ]
     }
-
-
-def _format_severity(severity: str | None, score: float | None) -> str:
-    if not severity and score is None:
-        return "Unknown"
-    if score is None:
-        return severity.title() if severity else "Unknown"
-    if severity:
-        return f"{severity.title()} ({score:.1f})"
-    return f"{score:.1f}"
 
 
 def _retry_after(response: httpx.Response) -> float:

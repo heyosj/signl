@@ -187,7 +187,7 @@ export default function Home() {
               </p>
               <pre>
                 <code>
-                  {`python -m src.main --init-config --config ./config.yaml\n${envCommand}\npython -m src.main --config ./config.yaml --once`}
+                  {`python -m src.main --init-config --config ./config.yaml\n${envCommand}\nrm -f state.json\npython -m src.main --config ./config.yaml --once`}
                 </code>
               </pre>
             </div>
@@ -407,6 +407,22 @@ export default function Home() {
             <pre>
               <code>{`settings:\n  min_cvss_score: 7.0`}</code>
             </pre>
+          </details>
+          <details className="faq-card">
+            <summary>How do I run this on a schedule (cron)?</summary>
+            <p>
+              Cron is a built-in scheduler. This runs signl every 30 minutes
+              while your computer is on.
+            </p>
+            <pre>
+              <code>
+                {`crontab -e\n\n*/30 * * * * cd /path/to/signl && /path/to/signl/.venv/bin/python -m src.main --config ./config.yaml --once \\\n  >> /path/to/signl/signl.log 2>&1`}
+              </code>
+            </pre>
+            <p>
+              You will only get alerts when something matches. Logs are saved to{" "}
+              <strong>signl.log</strong> in the repo folder.
+            </p>
           </details>
           <details className="faq-card">
             <summary>No alerts showing up</summary>

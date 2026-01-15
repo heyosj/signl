@@ -14,12 +14,22 @@ class StackConfig:
     packages: dict[str, list[str]]
     services: list[str]
     keywords: list[str]
+    deps: StackDepsConfig
+    match: StackMatchConfig
+    synonyms: dict[str, list[str]]
+    asset_criticality: AssetCriticalityConfig
+
+
+@dataclass
+class NotifierTarget:
+    type: str
+    settings: dict[str, Any]
 
 
 @dataclass
 class NotificationConfig:
-    discord_webhook_url: str | None
-    slack_webhook_url: str | None
+    targets: list[NotifierTarget]
+    used_legacy: bool
 
 
 @dataclass
@@ -73,6 +83,43 @@ class Config:
     notifications: NotificationConfig
     settings: Settings
     feeds: FeedsConfig
+    scoring: ScoringConfig
+
+
+@dataclass
+class StackDepsSource:
+    type: str
+    path: str
+
+
+@dataclass
+class StackDepsConfig:
+    enabled: bool
+    sources: list[StackDepsSource]
+    include_transitive: bool
+    ecosystems: list[str]
+
+
+@dataclass
+class StackMatchConfig:
+    mode: str
+    synonyms: bool
+    normalize_names: bool
+
+
+@dataclass
+class AssetCriticalityConfig:
+    services: dict[str, float]
+    packages: dict[str, float]
+
+
+@dataclass
+class ScoringConfig:
+    enabled: bool
+    weights: dict[str, float]
+    thresholds: dict[str, int]
+    prefer_sources: list[str]
+    keywords: dict[str, list[str]]
 
 
 def _expand_env(value: Any) -> Any:
@@ -109,22 +156,9 @@ def load_config(path: str) -> Config:
     if not isinstance(data, dict):
         raise ValueError("Config root must be a mapping")
 
-    stack_raw = _require_dict(data.get("stack"), "stack")
-    stack = StackConfig(
-        cloud=_require_list(stack_raw.get("cloud"), "stack.cloud"),
-        languages=_require_list(stack_raw.get("languages"), "stack.languages"),
-        packages=_normalize_packages(stack_raw.get("packages")),
-        services=_require_list(stack_raw.get("services"), "stack.services"),
-        keywords=_require_list(stack_raw.get("keywords"), "stack.keywords"),
-    )
+    stack = _load_stack(_require_dict(data.get("stack"), "stack"))
 
-    notifications_raw = _require_dict(data.get("notifications"), "notifications")
-    discord_raw = _require_dict(notifications_raw.get("discord"), "notifications.discord")
-    slack_raw = _require_dict(notifications_raw.get("slack"), "notifications.slack")
-    notifications = NotificationConfig(
-        discord_webhook_url=_normalize_webhook(discord_raw.get("webhook_url")),
-        slack_webhook_url=_normalize_webhook(slack_raw.get("webhook_url")),
-    )
+    notifications = _load_notifications(data)
 
     settings_raw = _require_dict(data.get("settings"), "settings")
     poll_interval = int(settings_raw.get("poll_interval_minutes", 15))
@@ -143,8 +177,168 @@ def load_config(path: str) -> Config:
     )
 
     feeds = _load_feeds(_require_dict(data.get("feeds"), "feeds"))
+    scoring = _load_scoring(_require_dict(data.get("scoring"), "scoring"))
 
-    return Config(stack=stack, notifications=notifications, settings=settings, feeds=feeds)
+    return Config(
+        stack=stack,
+        notifications=notifications,
+        settings=settings,
+        feeds=feeds,
+        scoring=scoring,
+    )
+
+
+def _load_stack(raw: dict[str, Any]) -> StackConfig:
+    deps = _load_deps(_require_dict(raw.get("deps"), "stack.deps"))
+    match = _load_match(_require_dict(raw.get("match"), "stack.match"))
+    synonyms = _normalize_synonyms(raw.get("synonyms"))
+    asset_criticality = _load_asset_criticality(
+        _require_dict(raw.get("asset_criticality"), "stack.asset_criticality")
+    )
+    return StackConfig(
+        cloud=_require_list(raw.get("cloud"), "stack.cloud"),
+        languages=_require_list(raw.get("languages"), "stack.languages"),
+        packages=_normalize_packages(raw.get("packages")),
+        services=_require_list(raw.get("services"), "stack.services"),
+        keywords=_require_list(raw.get("keywords"), "stack.keywords"),
+        deps=deps,
+        match=match,
+        synonyms=synonyms,
+        asset_criticality=asset_criticality,
+    )
+
+
+def _load_deps(raw: dict[str, Any]) -> StackDepsConfig:
+    sources_raw = raw.get("sources", [])
+    sources: list[StackDepsSource] = []
+    if sources_raw:
+        if not isinstance(sources_raw, list):
+            raise ValueError("stack.deps.sources must be a list")
+        for entry in sources_raw:
+            if not isinstance(entry, dict):
+                raise ValueError("stack.deps.sources entries must be mappings")
+            source_type = entry.get("type")
+            path = entry.get("path")
+            if not source_type or not path:
+                raise ValueError("stack.deps.sources entries must include type and path")
+            sources.append(StackDepsSource(type=str(source_type), path=str(path)))
+
+    return StackDepsConfig(
+        enabled=bool(raw.get("enabled", False)),
+        sources=sources,
+        include_transitive=bool(raw.get("include_transitive", True)),
+        ecosystems=_require_list(raw.get("ecosystems"), "stack.deps.ecosystems"),
+    )
+
+
+def _load_match(raw: dict[str, Any]) -> StackMatchConfig:
+    mode = str(raw.get("mode", "loose")).lower()
+    if mode not in {"strict", "loose"}:
+        raise ValueError("stack.match.mode must be 'strict' or 'loose'")
+    return StackMatchConfig(
+        mode=mode,
+        synonyms=bool(raw.get("synonyms", True)),
+        normalize_names=bool(raw.get("normalize_names", True)),
+    )
+
+
+def _normalize_synonyms(value: Any) -> dict[str, list[str]]:
+    raw = _require_dict(value, "stack.synonyms")
+    normalized: dict[str, list[str]] = {}
+    for canonical, aliases in raw.items():
+        if aliases is None:
+            normalized[str(canonical)] = []
+            continue
+        if not isinstance(aliases, list):
+            raise ValueError("stack.synonyms values must be lists")
+        normalized[str(canonical)] = [str(item) for item in aliases]
+    return normalized
+
+
+def _load_asset_criticality(raw: dict[str, Any]) -> AssetCriticalityConfig:
+    return AssetCriticalityConfig(
+        services=_normalize_weight_map(raw.get("services"), "stack.asset_criticality.services"),
+        packages=_normalize_weight_map(raw.get("packages"), "stack.asset_criticality.packages"),
+    )
+
+
+def _normalize_weight_map(value: Any, name: str) -> dict[str, float]:
+    if value is None:
+        return {}
+    if isinstance(value, list):
+        return {str(item).lower(): 1.0 for item in value}
+    if not isinstance(value, dict):
+        raise ValueError(f"{name} must be a list or mapping")
+    normalized: dict[str, float] = {}
+    for key, weight in value.items():
+        try:
+            normalized[str(key).lower()] = float(weight)
+        except (TypeError, ValueError):
+            raise ValueError(f"{name} values must be numbers")
+    return normalized
+
+
+def _load_notifications(data: dict[str, Any]) -> NotificationConfig:
+    targets: list[NotifierTarget] = []
+    used_legacy = False
+
+    notify_raw = data.get("notify", [])
+    if notify_raw:
+        if not isinstance(notify_raw, list):
+            raise ValueError("notify must be a list")
+        for entry in notify_raw:
+            if not isinstance(entry, dict):
+                raise ValueError("notify entries must be mappings")
+            target_type = entry.get("type")
+            if not target_type:
+                raise ValueError("notify entries must include type")
+            settings = {k: v for k, v in entry.items() if k != "type"}
+            targets.append(NotifierTarget(type=str(target_type), settings=settings))
+
+    notifications_raw = _require_dict(data.get("notifications"), "notifications")
+    discord_raw = _require_dict(notifications_raw.get("discord"), "notifications.discord")
+    slack_raw = _require_dict(notifications_raw.get("slack"), "notifications.slack")
+    discord_url = _normalize_webhook(discord_raw.get("webhook_url"))
+    slack_url = _normalize_webhook(slack_raw.get("webhook_url"))
+    if discord_url:
+        used_legacy = True
+        targets.append(NotifierTarget(type="discord", settings={"webhook_url": discord_url}))
+    if slack_url:
+        used_legacy = True
+        targets.append(NotifierTarget(type="slack", settings={"webhook_url": slack_url}))
+
+    return NotificationConfig(targets=targets, used_legacy=used_legacy)
+
+
+def _load_scoring(raw: dict[str, Any]) -> ScoringConfig:
+    weights_raw = _require_dict(raw.get("weights"), "scoring.weights")
+    thresholds_raw = _require_dict(raw.get("thresholds"), "scoring.thresholds")
+    keywords_raw = _require_dict(raw.get("keywords"), "scoring.keywords")
+    weights = {
+        "severity": float(weights_raw.get("severity", 0.45)),
+        "exploitability": float(weights_raw.get("exploitability", 0.25)),
+        "relevance": float(weights_raw.get("relevance", 0.2)),
+        "recency": float(weights_raw.get("recency", 0.1)),
+    }
+    thresholds = {
+        "P0": int(thresholds_raw.get("P0", 85)),
+        "P1": int(thresholds_raw.get("P1", 70)),
+        "P2": int(thresholds_raw.get("P2", 50)),
+        "P3": int(thresholds_raw.get("P3", 0)),
+    }
+    keywords = {
+        "exploited_in_wild": _require_list(
+            keywords_raw.get("exploited_in_wild"), "scoring.keywords.exploited_in_wild"
+        ),
+        "poc": _require_list(keywords_raw.get("poc"), "scoring.keywords.poc"),
+    }
+    return ScoringConfig(
+        enabled=bool(raw.get("enabled", True)),
+        weights=weights,
+        thresholds=thresholds,
+        prefer_sources=_require_list(raw.get("prefer_sources"), "scoring.prefer_sources"),
+        keywords=keywords,
+    )
 
 
 def _load_feeds(raw: dict[str, Any]) -> FeedsConfig:

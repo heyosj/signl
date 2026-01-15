@@ -9,14 +9,14 @@ from typing import Any
 import httpx
 
 from .base import BaseNotifier
-from ..feeds.base import FeedItem
+from .message import NotificationMessage, NotificationMetadata
 
 
 SEVERITY_COLORS = {
-    "critical": "#E74C3C",
-    "high": "#E67E22",
-    "medium": "#F1C40F",
-    "low": "#95A5A6",
+    "p0": "#E74C3C",
+    "p1": "#E67E22",
+    "p2": "#F1C40F",
+    "p3": "#95A5A6",
 }
 
 
@@ -32,8 +32,8 @@ class SlackNotifier(BaseNotifier):
         self._settings = settings
         self._logger = logging.getLogger(__name__)
 
-    async def send(self, item: FeedItem, reasons: list[str]) -> bool:
-        payload = _build_payload(item, reasons)
+    async def send(self, message: NotificationMessage, metadata: NotificationMetadata) -> bool:
+        payload = _build_payload(message, metadata)
         headers = {"User-Agent": self._settings.user_agent}
 
         async with httpx.AsyncClient(timeout=self._settings.timeout_seconds) as client:
@@ -50,43 +50,35 @@ class SlackNotifier(BaseNotifier):
             return False
 
 
-def _build_payload(item: FeedItem, reasons: list[str]) -> dict[str, Any]:
-    severity = (item.severity or "").lower()
-    color = SEVERITY_COLORS.get(severity, SEVERITY_COLORS["low"])
-    description = item.description
+def _build_payload(message: NotificationMessage, metadata: NotificationMetadata) -> dict[str, Any]:
+    severity_key = message.priority.lower()
+    color = SEVERITY_COLORS.get(severity_key, SEVERITY_COLORS["low"])
+    description = message.summary
     if len(description) > 300:
         description = description[:297] + "..."
 
-    reason_text = "\n".join(reasons[:5]) if reasons else "Matched your stack"
-    timestamp = item.published.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
+    reason_text = "\n".join(metadata.reasons[:5]) if metadata.reasons else "Matched your stack"
+    rationale_text = "\n".join(metadata.rationale[:2]) if metadata.rationale else "Scored with defaults"
+    timestamp = message.published.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
 
     return {
         "attachments": [
             {
                 "color": color,
-                "title": item.title,
-                "title_link": item.url,
+                "title": message.title,
+                "title_link": message.url,
                 "text": description,
                 "fields": [
-                    {"title": "Severity", "value": _format_severity(item.severity, item.cvss_score), "short": True},
-                    {"title": "Source", "value": item.source.upper(), "short": True},
+                    {"title": "Priority", "value": f"{message.priority} ({message.score})", "short": True},
+                    {"title": "Source", "value": message.source.upper(), "short": True},
                     {"title": "Why you're seeing this", "value": reason_text, "short": False},
+                    {"title": "Scoring", "value": rationale_text, "short": False},
                 ],
                 "footer": "signl",
-                "ts": int(item.published.timestamp()),
+                "ts": int(message.published.timestamp()),
             }
         ]
     }
-
-
-def _format_severity(severity: str | None, score: float | None) -> str:
-    if not severity and score is None:
-        return "Unknown"
-    if score is None:
-        return severity.title() if severity else "Unknown"
-    if severity:
-        return f"{severity.title()} ({score:.1f})"
-    return f"{score:.1f}"
 
 
 def _retry_after(response: httpx.Response) -> float:

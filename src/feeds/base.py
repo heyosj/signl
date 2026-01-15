@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 
 
@@ -17,6 +17,10 @@ class FeedItem:
     cvss_score: float | None
     affected_packages: list[str]
     raw_data: dict
+    ecosystems: list[str] = field(default_factory=list)
+    affected_services: list[str] = field(default_factory=list)
+    affected_cloud: list[str] = field(default_factory=list)
+    tags: list[str] = field(default_factory=list)
 
 
 class BaseFeed(ABC):

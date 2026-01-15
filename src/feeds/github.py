@@ -90,7 +90,7 @@ def _parse_items(entries: list[dict[str, Any]]) -> list[FeedItem]:
         severity = _normalize_severity(entry.get("severity"))
         published = _parse_datetime(entry.get("published_at"))
         url = entry.get("html_url") or ""
-        affected = _extract_packages(entry.get("vulnerabilities", []))
+        affected, ecosystems = _extract_packages(entry.get("vulnerabilities", []))
         results.append(
             FeedItem(
                 id=ghsa_id,
@@ -103,19 +103,24 @@ def _parse_items(entries: list[dict[str, Any]]) -> list[FeedItem]:
                 cvss_score=None,
                 affected_packages=affected,
                 raw_data=entry,
+                ecosystems=ecosystems,
             )
         )
     return results
 
 
-def _extract_packages(vulnerabilities: list[dict[str, Any]]) -> list[str]:
+def _extract_packages(vulnerabilities: list[dict[str, Any]]) -> tuple[list[str], list[str]]:
     packages: set[str] = set()
+    ecosystems: set[str] = set()
     for vuln in vulnerabilities:
         package = vuln.get("package", {})
         name = package.get("name")
+        ecosystem = package.get("ecosystem")
         if name:
             packages.add(name)
-    return sorted(packages)
+        if ecosystem:
+            ecosystems.add(str(ecosystem).lower())
+    return sorted(packages), sorted(ecosystems)
 
 
 def _normalize_severity(value: str | None) -> str | None:

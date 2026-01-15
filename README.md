@@ -37,12 +37,66 @@ python -m src.main --config ./config.yaml --once
 ## Configuration
 
 See `config.example.yaml` for the full schema. Key sections:
-- `stack`: cloud, languages, packages, services, keywords
-- `notifications.slack.webhook_url`: Slack webhook (primary)
-- `notifications.discord.webhook_url`: Discord webhook (testing/optional)
+- `stack`: cloud, languages, packages, services, keywords, deps, match
+- `notify`: list of notifiers (Slack/Discord/webhook)
+- `notifications.slack.webhook_url` + `notifications.discord.webhook_url`: legacy single notifier config
 - `feeds`: enable/disable sources and RSS lists
 - Feed sources can be disabled by setting the `feeds.*` flag to `false`.
 - `settings`: poll interval, state file path, timeouts, user agent, max notifications per run, min CVSS score
+- `scoring`: weights, thresholds, keywords, preferred sources
+
+### Example (legacy, still supported)
+
+```
+notifications:
+  slack:
+    webhook_url: "${SLACK_WEBHOOK_URL}"
+```
+
+### Example (multi-notifier)
+
+```
+notify:
+  - type: slack
+    webhook_url: "${SLACK_WEBHOOK_URL}"
+  - type: discord
+    webhook_url: "${DISCORD_WEBHOOK_URL}"
+  - type: webhook
+    url: "${WEBHOOK_URL}"
+    headers:
+      Authorization: "Bearer ${WEBHOOK_TOKEN}"
+```
+
+### Dependency Matching
+
+`stack.deps` can augment `stack.packages` with direct and transitive dependencies.
+
+Supported sources:
+- npm: `package.json` (direct), `package-lock.json` (transitive)
+- pip: `requirements.txt` (direct), `poetry.lock` (transitive)
+
+Matching defaults to `loose` mode (aliases + normalization). Set `stack.match.mode: strict` for exact-only matches.
+
+### Scoring / Priority
+
+Each matched alert gets a score (0-100) and priority (P0-P3). Defaults weight:
+- Severity (CVSS or vendor mapping)
+- Exploitability signals (CISA KEV, keywords)
+- Relevance strength (direct > transitive > service/cloud/keyword)
+- Recency
+
+Notifications include priority, score, and the top scoring rationale.
+Alerts are sent grouped by priority (P0 first).
+
+### Webhook Payload
+
+Generic webhook receives JSON with:
+`title`, `summary`, `priority`, `score`, `url`, `source`, `published`, `affected`, `tags`, `reasons`, `rationale`.
+
+### Migration Notes
+
+- `notifications.*` is still accepted, but `notify` is preferred for multiple outputs.
+- Existing configs continue to work as-is; new fields are optional.
 
 ## Deployment
 

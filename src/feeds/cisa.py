@@ -61,6 +61,7 @@ def _parse_items(payload: dict[str, Any], since: datetime) -> list[FeedItem]:
                 cvss_score=None,
                 affected_packages=[],
                 raw_data=entry,
+                tags=["kev"],
             )
         )
     return results

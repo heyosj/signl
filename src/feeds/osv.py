@@ -47,7 +47,8 @@ class OSVFeed(BaseFeed):
 
         async with httpx.AsyncClient(timeout=self._settings.timeout_seconds) as client:
             for ecosystem, packages in self._settings.packages.items():
-                osv_ecosystem = ECOSYSTEM_MAP.get(ecosystem.lower(), ecosystem)
+                internal_ecosystem = ecosystem.lower()
+                osv_ecosystem = ECOSYSTEM_MAP.get(internal_ecosystem, ecosystem)
                 for package in packages:
                     payload = {"package": {"name": package, "ecosystem": osv_ecosystem}}
                     response = await client.post(OSV_ENDPOINT, json=payload, headers=headers)
@@ -56,13 +57,18 @@ class OSVFeed(BaseFeed):
                     for vuln in data.get("vulns", []):
                         if len(items) >= self._settings.max_results:
                             return items
-                        item = _parse_vuln(vuln, package, start)
+                        item = _parse_vuln(vuln, package, start, internal_ecosystem)
                         if item:
                             items.append(item)
         return items
 
 
-def _parse_vuln(vuln: dict[str, Any], package: str, since: datetime) -> FeedItem | None:
+def _parse_vuln(
+    vuln: dict[str, Any],
+    package: str,
+    since: datetime,
+    ecosystem: str,
+) -> FeedItem | None:
     vuln_id = vuln.get("id")
     if not vuln_id:
         return None
@@ -83,6 +89,7 @@ def _parse_vuln(vuln: dict[str, Any], package: str, since: datetime) -> FeedItem
         cvss_score=None,
         affected_packages=[package],
         raw_data=vuln,
+        ecosystems=[ecosystem],
     )
 
 
