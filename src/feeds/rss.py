@@ -153,7 +153,7 @@ def _parse_pubdate(value: str | None) -> datetime:
 def _text(node: ET.Element, tag: str) -> str | None:
     child = node.find(tag)
     if child is None:
-        child = node.find(f\"{{*}}{tag}\")
+        child = node.find(f"{{*}}{tag}")
     if child is None or child.text is None:
         return None
     return child.text.strip()
