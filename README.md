@@ -42,7 +42,7 @@ See `config.example.yaml` for the full schema. Key sections:
 - `notifications.discord.webhook_url`: Discord webhook (testing/optional)
 - `feeds`: enable/disable sources and RSS lists
 - Feed sources can be disabled by setting the `feeds.*` flag to `false`.
-- `settings`: poll interval, state file path, timeouts, user agent
+- `settings`: poll interval, state file path, timeouts, user agent, max notifications per run
 
 ## Deployment
 

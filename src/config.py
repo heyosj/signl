@@ -30,6 +30,7 @@ class Settings:
     max_results_per_feed: int
     request_timeout_seconds: int
     user_agent: str
+    max_notifications_per_run: int
 
 
 @dataclass
@@ -136,6 +137,7 @@ def load_config(path: str) -> Config:
         max_results_per_feed=int(settings_raw.get("max_results_per_feed", 200)),
         request_timeout_seconds=int(settings_raw.get("request_timeout_seconds", 20)),
         user_agent=str(settings_raw.get("user_agent", "signl/0.1")),
+        max_notifications_per_run=int(settings_raw.get("max_notifications_per_run", 25)),
     )
 
     feeds = _load_feeds(_require_dict(data.get("feeds"), "feeds"))

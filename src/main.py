@@ -258,6 +258,12 @@ async def _poll_once(feeds, notifier, config, state, dry_run: bool) -> None:
             logger.info("Notified for %s", item.id)
             mark_sent(state, item.id)
             notified_count += 1
+            if notified_count >= config.settings.max_notifications_per_run:
+                logger.warning(
+                    "Reached max_notifications_per_run=%s; stopping early",
+                    config.settings.max_notifications_per_run,
+                )
+                break
 
     state.last_poll = datetime.now(timezone.utc)
     prune_sent(state)

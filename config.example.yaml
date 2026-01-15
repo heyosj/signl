@@ -89,3 +89,4 @@ settings:
   max_results_per_feed: 200
   request_timeout_seconds: 20
   user_agent: "signl/0.1"
+  max_notifications_per_run: 25

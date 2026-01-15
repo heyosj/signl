@@ -32,9 +32,22 @@ export default function Home() {
     "  # discord:",
     "  #   webhook_url: \"${DISCORD_WEBHOOK_URL}\"",
     "",
+    "feeds:",
+    "  nvd: true",
+    "  github: true",
+    "  msrc: true",
+    "  cisa:",
+    "    enabled: true",
+    "  osv:",
+    "    enabled: true",
+    "  hackernews:",
+    "    enabled: true",
+    "    max_terms: 6",
+    "",
     "settings:",
     "  poll_interval_minutes: 15",
     "  state_file: \"./state.json\"",
+    "  max_notifications_per_run: 10",
   ].join("\n");
 
   return (
@@ -206,81 +219,83 @@ export default function Home() {
                   <code>{exampleConfig}</code>
                 </pre>
               </div>
-              <div className="panel config-note">
-                <h3>Match logic</h3>
-                <ul className="list">
-                  <li>Direct package name match</li>
-                  <li>Service name match</li>
-                  <li>Keyword match</li>
-                  <li>Language mention (contextual)</li>
-                  <li>Cloud provider mention (contextual)</li>
-                </ul>
+            </div>
+            <div className="config-column">
+              <div className="panel expected">
+                <h3>What alerts look like</h3>
+                <div className="alert-card">
+                  <div className="alert-head">
+                    <span className="alert-source">NVD</span>
+                    <span className="alert-severity critical">Critical 9.8</span>
+                  </div>
+                  <p className="alert-title">
+                    CVE-2024-1890: Prototype pollution in lodash
+                  </p>
+                  <p className="alert-meta">Matched: package lodash</p>
+                  <a className="alert-link" href="#" aria-label="Open advisory">
+                    Read advisory →
+                  </a>
+                  <div className="alert-tags">
+                    <span>Package</span>
+                    <span>npm</span>
+                    <span>Slack</span>
+                  </div>
+                </div>
+                <div className="alert-card">
+                  <div className="alert-head">
+                    <span className="alert-source">GitHub</span>
+                    <span className="alert-severity high">High 7.5</span>
+                  </div>
+                  <p className="alert-title">
+                    GHSA-xxxx-yyyy: Request handling bug in requests
+                  </p>
+                  <p className="alert-meta">Matched: package requests</p>
+                  <a className="alert-link" href="#" aria-label="Open advisory">
+                    Read advisory →
+                  </a>
+                  <div className="alert-tags">
+                    <span>Package</span>
+                    <span>pip</span>
+                    <span>Slack</span>
+                  </div>
+                </div>
+                <div className="alert-card">
+                  <div className="alert-head">
+                    <span className="alert-source">MSRC</span>
+                    <span className="alert-severity medium">Medium</span>
+                  </div>
+                  <p className="alert-title">
+                    Azure advisory impacting Kubernetes control plane
+                  </p>
+                  <p className="alert-meta">Matched: service kubernetes</p>
+                  <a className="alert-link" href="#" aria-label="Open advisory">
+                    Read advisory →
+                  </a>
+                  <div className="alert-tags">
+                    <span>Service</span>
+                    <span>Azure</span>
+                    <span>Slack</span>
+                  </div>
+                </div>
                 <p className="note">
-                  Noisy matches are avoided with token-aware matching for short words.
+                  These are the kinds of alerts this config will send. Everything
+                  else is ignored.
                 </p>
               </div>
             </div>
-            <div className="panel expected">
-              <h3>What alerts look like</h3>
-              <div className="alert-card">
-                <div className="alert-head">
-                  <span className="alert-source">NVD</span>
-                  <span className="alert-severity critical">Critical 9.8</span>
-                </div>
-                <p className="alert-title">
-                  CVE-2024-1890: Prototype pollution in lodash
-                </p>
-                <p className="alert-meta">Matched: package lodash</p>
-                <a className="alert-link" href="#" aria-label="Open advisory">
-                  Read advisory →
-                </a>
-                <div className="alert-tags">
-                  <span>Package</span>
-                  <span>npm</span>
-                  <span>Slack</span>
-                </div>
-              </div>
-              <div className="alert-card">
-                <div className="alert-head">
-                  <span className="alert-source">GitHub</span>
-                  <span className="alert-severity high">High 7.5</span>
-                </div>
-                <p className="alert-title">
-                  GHSA-xxxx-yyyy: Request handling bug in requests
-                </p>
-                <p className="alert-meta">Matched: package requests</p>
-                <a className="alert-link" href="#" aria-label="Open advisory">
-                  Read advisory →
-                </a>
-                <div className="alert-tags">
-                  <span>Package</span>
-                  <span>pip</span>
-                  <span>Slack</span>
-                </div>
-              </div>
-              <div className="alert-card">
-                <div className="alert-head">
-                  <span className="alert-source">MSRC</span>
-                  <span className="alert-severity medium">Medium</span>
-                </div>
-                <p className="alert-title">
-                  Azure advisory impacting Kubernetes control plane
-                </p>
-                <p className="alert-meta">Matched: service kubernetes</p>
-                <a className="alert-link" href="#" aria-label="Open advisory">
-                  Read advisory →
-                </a>
-                <div className="alert-tags">
-                  <span>Service</span>
-                  <span>Azure</span>
-                  <span>Slack</span>
-                </div>
-              </div>
-              <p className="note">
-                These are the kinds of alerts this config will send. Everything
-                else is ignored.
-              </p>
-            </div>
+          </div>
+          <div className="panel config-note full-width">
+            <h3>Match logic</h3>
+            <ul className="list">
+              <li>Direct package name match</li>
+              <li>Service name match</li>
+              <li>Keyword match</li>
+              <li>Language mention (contextual)</li>
+              <li>Cloud provider mention (contextual)</li>
+            </ul>
+            <p className="note">
+              Noisy matches are avoided with token-aware matching for short words.
+            </p>
           </div>
         </section>
 
@@ -371,6 +386,16 @@ export default function Home() {
               <strong>feeds.msrc</strong>, or nested <strong>enabled</strong> flags
               to false in <strong>config.yaml</strong>.
             </p>
+          </details>
+          <details className="faq-card">
+            <summary>How do I avoid webhook rate limits?</summary>
+            <p>
+              Set <strong>settings.max_notifications_per_run</strong> to cap the
+              number of alerts per run during testing.
+            </p>
+            <pre>
+              <code>{`settings:\n  max_notifications_per_run: 10`}</code>
+            </pre>
           </details>
           <details className="faq-card">
             <summary>No alerts showing up</summary>
