@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Security Stack News Notifier</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="orb orb-one"></div>
+    <div class="orb orb-two"></div>
+    <div class="grid"></div>
+
+    <header class="hero">
+      <nav class="nav">
+        <span class="logo">Security Stack News Notifier</span>
+        <div class="nav-links">
+          <a href="#how">How it works</a>
+          <a href="#setup">Setup</a>
+          <a href="#config">Config</a>
+        </div>
+      </nav>
+
+      <div class="hero-content">
+        <div class="hero-text">
+          <p class="eyebrow">Minimal, robust, zero noise</p>
+          <h1>Only the security alerts that match your stack.</h1>
+          <p class="lead">
+            Define your cloud, languages, packages, and services once. The notifier
+            polls security feeds and sends you Discord alerts only when something
+            actually applies to your environment.
+          </p>
+          <div class="cta-row">
+            <a class="cta" href="#setup">Get set up</a>
+            <a class="cta ghost" href="#config">See the config</a>
+          </div>
+          <div class="stat-row">
+            <div>
+              <p class="stat">3</p>
+              <p class="stat-label">Feeds supported (NVD, GitHub, MSRC)</p>
+            </div>
+            <div>
+              <p class="stat">0</p>
+              <p class="stat-label">Noise. Alerts only when relevant.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="hero-card">
+          <div class="card-header">
+            <span>Live match</span>
+            <span class="pill">Matched</span>
+          </div>
+          <h3>CVE-2024-XXXXX: Critical in lodash</h3>
+          <p>
+            Prototype pollution vulnerability allowing remote code execution on
+            affected versions.
+          </p>
+          <div class="chip-row">
+            <span class="chip">Package: lodash</span>
+            <span class="chip">Severity: Critical (9.8)</span>
+            <span class="chip">Source: NVD</span>
+          </div>
+          <div class="reason">
+            Why you are seeing this: Package match: lodash
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <section id="how" class="section">
+        <div class="section-title">
+          <p class="eyebrow">How it works</p>
+          <h2>Signal, filtered by your stack.</h2>
+        </div>
+        <div class="steps">
+          <div class="step">
+            <span class="step-number">01</span>
+            <h3>Describe your stack</h3>
+            <p>List clouds, languages, packages, services, and keywords in YAML.</p>
+          </div>
+          <div class="step">
+            <span class="step-number">02</span>
+            <h3>Poll trusted feeds</h3>
+            <p>NVD, GitHub advisories, and MSRC updates are checked on a schedule.</p>
+          </div>
+          <div class="step">
+            <span class="step-number">03</span>
+            <h3>Match and notify</h3>
+            <p>Only items that match your stack are sent to Discord.</p>
+          </div>
+        </div>
+      </section>
+
+      <section id="setup" class="section">
+        <div class="section-title">
+          <p class="eyebrow">Setup</p>
+          <h2>Run locally, on cron, or inside Docker.</h2>
+        </div>
+        <div class="setup-grid">
+          <div class="panel">
+            <h3>1. Configure</h3>
+            <pre><code>cp config.example.yaml config.yaml
+export DISCORD_WEBHOOK_URL="https://discord.com/api/webhooks/..."</code></pre>
+          </div>
+          <div class="panel">
+            <h3>2. Install</h3>
+            <pre><code>pip install -r requirements.txt</code></pre>
+          </div>
+          <div class="panel">
+            <h3>3. Run</h3>
+            <pre><code>python -m src.main --config ./config.yaml --once</code></pre>
+          </div>
+          <div class="panel accent">
+            <h3>Production</h3>
+            <p>Schedule with cron, or run in Docker and mount config/state.</p>
+            <pre><code>docker run \
+  -v ./config.yaml:/app/config.yaml \
+  -v ./state.json:/app/state.json \
+  security-stack-notifier</code></pre>
+          </div>
+        </div>
+      </section>
+
+      <section id="config" class="section">
+        <div class="section-title">
+          <p class="eyebrow">Config</p>
+          <h2>Target what matters to your environment.</h2>
+        </div>
+        <div class="config-grid">
+          <div class="panel">
+            <h3>Example config.yaml</h3>
+            <pre><code>stack:
+  cloud:
+    - azure
+    - aws
+
+  packages:
+    npm:
+      - lodash
+    pip:
+      - requests
+
+  services:
+    - kubernetes
+    - redis
+
+notifications:
+  discord:
+    webhook_url: "${DISCORD_WEBHOOK_URL}"
+
+settings:
+  poll_interval_minutes: 15
+  state_file: "./state.json"</code></pre>
+          </div>
+          <div class="panel">
+            <h3>Match logic</h3>
+            <ul class="list">
+              <li>Direct package name match</li>
+              <li>Service name match</li>
+              <li>Keyword match</li>
+              <li>Language mention (contextual)</li>
+              <li>Cloud provider mention (contextual)</li>
+            </ul>
+            <p class="note">Noisy matches are avoided with token-aware matching for short words.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="section-title">
+          <p class="eyebrow">Architecture</p>
+          <h2>Lean by design.</h2>
+        </div>
+        <div class="arch">
+          <div>
+            <h3>Feeds</h3>
+            <p>NVD CVE API, GitHub advisories, MSRC RSS.</p>
+          </div>
+          <div>
+            <h3>Matcher</h3>
+            <p>Prioritized relevance scoring using your stack definition.</p>
+          </div>
+          <div>
+            <h3>Notifier</h3>
+            <p>Discord webhook embeds with severity + reasons.</p>
+          </div>
+          <div>
+            <h3>State</h3>
+            <p>Local JSON store prevents duplicate alerts.</p>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <p>Open-source, self-hosted, built for zero-noise security monitoring.</p>
+    </footer>
+  </body>
+</html>
