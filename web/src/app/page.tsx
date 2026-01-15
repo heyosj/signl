@@ -155,9 +155,11 @@ export default function Home() {
                 <span className="step-number">02</span>
                 <h3>Install dependencies</h3>
               </div>
-              <p>Install Python dependencies from the signl folder.</p>
+              <p>Use a virtual environment to avoid system Python conflicts.</p>
               <pre>
-                <code>{`pip install -r requirements.txt`}</code>
+                <code>
+                  {`python3 -m venv .venv\nsource .venv/bin/activate\npip install -r requirements.txt`}
+                </code>
               </pre>
             </div>
             <div className="step-arrow" aria-hidden="true"></div>

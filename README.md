@@ -28,6 +28,8 @@ export DISCORD_WEBHOOK_URL="https://discord.com/api/webhooks/..."
 3. Install and run:
 
 ```
+python3 -m venv .venv
+source .venv/bin/activate
 pip install -r requirements.txt
 python -m src.main --config ./config.yaml --once
 ```
