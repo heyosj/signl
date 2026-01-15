@@ -6,8 +6,8 @@ export default function Home() {
 
   const envCommand = [
     "export DISCORD_WEBHOOK_URL=\"https://discord.com/api/webhooks/...\"",
-    "# or",
     "export SLACK_WEBHOOK_URL=\"https://hooks.slack.com/services/...\"",
+    "export WEBHOOK_URL=\"https://hooks.example.com/signl\"",
   ].join("\n");
 
   const exampleConfig = [
@@ -16,21 +16,38 @@ export default function Home() {
     "    - azure",
     "    - aws",
     "",
+    "  services:",
+    "    - kubernetes",
+    "    - redis",
+    "",
     "  packages:",
     "    npm:",
     "      - lodash",
     "    pip:",
     "      - requests",
     "",
-    "  services:",
-    "    - kubernetes",
-    "    - redis",
+    "  deps:",
+    "    enabled: true",
+    "    include_transitive: true",
+    "    ecosystems: [\"npm\", \"pip\"]",
+    "    sources:",
+    "      - type: manifest",
+    "        path: ./package.json",
+    "      - type: lockfile",
+    "        path: ./package-lock.json",
     "",
-    "notifications:",
-    "  slack:",
+    "  match:",
+    "    mode: loose",
+    "    synonyms: true",
+    "    normalize_names: true",
+    "",
+    "notify:",
+    "  - type: slack",
     "    webhook_url: \"${SLACK_WEBHOOK_URL}\"",
-    "  # discord:",
-    "  #   webhook_url: \"${DISCORD_WEBHOOK_URL}\"",
+    "  - type: discord",
+    "    webhook_url: \"${DISCORD_WEBHOOK_URL}\"",
+    "  - type: webhook",
+    "    url: \"${WEBHOOK_URL}\"",
     "",
     "feeds:",
     "  nvd: true",
@@ -49,6 +66,14 @@ export default function Home() {
     "  state_file: \"./state.json\"",
     "  max_notifications_per_run: 10",
     "  min_cvss_score: 7.0",
+    "",
+    "scoring:",
+    "  enabled: true",
+    "  thresholds:",
+    "    P0: 85",
+    "    P1: 70",
+    "    P2: 50",
+    "    P3: 0",
   ].join("\n");
 
   return (
@@ -72,9 +97,9 @@ export default function Home() {
             <p className="eyebrow">Minimal, robust, zero noise</p>
             <h1>Only the security alerts that match your stack.</h1>
             <p className="lead">
-              Define your cloud, languages, packages, and services once. The
-              notifier polls security feeds and sends you Slack alerts only when
-              something actually applies to your environment.
+              Define your cloud, packages, services, and dependency sources once.
+              The notifier scores and prioritizes alerts, then routes them to
+              Slack, Discord, or a webhook only when they apply to your environment.
             </p>
             <div className="cta-row">
               <a className="cta" href="#setup">
@@ -110,11 +135,11 @@ export default function Home() {
             </p>
             <div className="chip-row">
               <span className="chip">Package: lodash</span>
-              <span className="chip">Severity: Critical (9.8)</span>
+              <span className="chip">Priority: P0 (92)</span>
               <span className="chip">Source: NVD</span>
             </div>
             <div className="reason">
-              Why you are seeing this: Package match: lodash
+              Why you are seeing this: Direct dependency match
             </div>
           </div>
         </div>
@@ -130,7 +155,7 @@ export default function Home() {
             <div className="step">
               <span className="step-number">01</span>
               <h3>Describe your stack</h3>
-              <p>List clouds, languages, packages, services, and keywords in YAML.</p>
+              <p>List clouds, packages, services, and dependency sources in YAML.</p>
             </div>
             <div className="step">
               <span className="step-number">02</span>
@@ -139,8 +164,8 @@ export default function Home() {
             </div>
             <div className="step">
               <span className="step-number">03</span>
-              <h3>Match and notify</h3>
-              <p>Only items that match your stack are sent to Slack.</p>
+              <h3>Match, score, notify</h3>
+              <p>Matches are scored by priority, then sent to your chosen notifiers.</p>
             </div>
           </div>
         </section>
@@ -182,9 +207,7 @@ export default function Home() {
                 <span className="step-number">03</span>
                 <h3>Create config.yaml + run</h3>
               </div>
-              <p>
-                For testing, add your stack + Discord webhook, then run once.
-              </p>
+              <p>For testing, add your stack + notify targets, then run once.</p>
               <pre>
                 <code>
                   {`python -m src.main --init-config --config ./config.yaml\n${envCommand}\nrm -f state.json\npython -m src.main --config ./config.yaml --once`}
@@ -227,12 +250,12 @@ export default function Home() {
                 <div className="alert-card">
                   <div className="alert-head">
                     <span className="alert-source">NVD</span>
-                    <span className="alert-severity critical">Critical 9.8</span>
+                    <span className="alert-severity critical">P0 92</span>
                   </div>
                   <p className="alert-title">
                     CVE-2024-1890: Prototype pollution in lodash
                   </p>
-                  <p className="alert-meta">Matched: package lodash</p>
+                  <p className="alert-meta">Matched: direct dependency lodash</p>
                   <a className="alert-link" href="#" aria-label="Open advisory">
                     Read advisory →
                   </a>
@@ -245,25 +268,25 @@ export default function Home() {
                 <div className="alert-card">
                   <div className="alert-head">
                     <span className="alert-source">GitHub</span>
-                    <span className="alert-severity high">High 7.5</span>
+                    <span className="alert-severity high">P2 58</span>
                   </div>
                   <p className="alert-title">
                     GHSA-xxxx-yyyy: Request handling bug in requests
                   </p>
-                  <p className="alert-meta">Matched: package requests</p>
+                  <p className="alert-meta">Matched: transitive dependency requests</p>
                   <a className="alert-link" href="#" aria-label="Open advisory">
                     Read advisory →
                   </a>
                   <div className="alert-tags">
                     <span>Package</span>
                     <span>pip</span>
-                    <span>Slack</span>
+                    <span>Webhook</span>
                   </div>
                 </div>
                 <div className="alert-card">
                   <div className="alert-head">
                     <span className="alert-source">MSRC</span>
-                    <span className="alert-severity medium">Medium</span>
+                    <span className="alert-severity medium">P3 35</span>
                   </div>
                   <p className="alert-title">
                     Azure advisory impacting Kubernetes control plane
@@ -275,7 +298,43 @@ export default function Home() {
                   <div className="alert-tags">
                     <span>Service</span>
                     <span>Azure</span>
+                    <span>Discord</span>
+                  </div>
+                </div>
+                <div className="alert-card">
+                  <div className="alert-head">
+                    <span className="alert-source">CISA</span>
+                    <span className="alert-severity critical">P0 90</span>
+                  </div>
+                  <p className="alert-title">
+                    KEV: RCE in widely used npm package
+                  </p>
+                  <p className="alert-meta">Matched: transitive dependency</p>
+                  <a className="alert-link" href="#" aria-label="Open advisory">
+                    Read advisory →
+                  </a>
+                  <div className="alert-tags">
+                    <span>Package</span>
+                    <span>npm</span>
                     <span>Slack</span>
+                  </div>
+                </div>
+                <div className="alert-card">
+                  <div className="alert-head">
+                    <span className="alert-source">OSV</span>
+                    <span className="alert-severity high">P1 74</span>
+                  </div>
+                  <p className="alert-title">
+                    OSV-2024-0001: Deserialization bug in requests
+                  </p>
+                  <p className="alert-meta">Matched: direct dependency requests</p>
+                  <a className="alert-link" href="#" aria-label="Open advisory">
+                    Read advisory →
+                  </a>
+                  <div className="alert-tags">
+                    <span>Package</span>
+                    <span>pip</span>
+                    <span>Webhook</span>
                   </div>
                 </div>
                 <p className="note">
@@ -288,14 +347,13 @@ export default function Home() {
           <div className="panel config-note full-width">
             <h3>Match logic</h3>
             <ul className="list">
-              <li>Direct package name match</li>
-              <li>Service name match</li>
-              <li>Keyword match</li>
-              <li>Language mention (contextual)</li>
-              <li>Cloud provider mention (contextual)</li>
+              <li>Direct dependency match (manifest or lockfile)</li>
+              <li>Transitive dependency match (optional)</li>
+              <li>Service or cloud match with synonyms</li>
+              <li>Keyword or language context</li>
             </ul>
             <p className="note">
-              Noisy matches are avoided with token-aware matching for short words.
+              Loose mode uses normalization + synonyms; strict mode requires exact matches.
             </p>
           </div>
         </section>
@@ -315,11 +373,11 @@ export default function Home() {
             </div>
             <div>
               <h3>Matcher</h3>
-              <p>Prioritized relevance scoring using your stack definition.</p>
+              <p>Dependency-aware matching with strict/loose modes and synonyms.</p>
             </div>
             <div>
               <h3>Notifier</h3>
-              <p>Slack or Discord webhooks with severity + reasons.</p>
+              <p>Slack, Discord, or generic webhook with priority + rationale.</p>
             </div>
             <div>
               <h3>State</h3>

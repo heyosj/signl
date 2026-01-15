@@ -321,6 +321,7 @@ pre {
 .expected {
   background: #f6efe6;
   height: 100%;
+  align-self: stretch;
 }
 
 .full-width {
@@ -338,6 +339,8 @@ pre {
   box-shadow: 0 12px 24px rgba(11, 14, 17, 0.08);
   display: grid;
   gap: 10px;
+  grid-template-rows: auto auto auto auto;
+  min-height: 200px;
 }
 
 .alert-head {
