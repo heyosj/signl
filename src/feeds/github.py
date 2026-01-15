@@ -50,12 +50,21 @@ class GitHubFeed(BaseFeed):
                     params["since"] = _to_iso(start)
 
                 response = await client.get(GITHUB_ADVISORIES_ENDPOINT, headers=headers, params=params)
+                if response.status_code == 403 and "rate limit" in response.text.lower():
+                    reset = response.headers.get("X-RateLimit-Reset")
+                    self._logger.warning("GitHub rate limit hit; reset at %s", reset or "unknown")
+                    break
                 response.raise_for_status()
                 payload = response.json()
                 if not payload:
                     break
 
                 items.extend(_parse_items(payload))
+                if len(items) >= self._settings.max_results:
+                    return items[: self._settings.max_results]
+
+                if since and _all_older_than(payload, start):
+                    break
                 if len(payload) < per_page:
                     break
                 page += 1
@@ -113,8 +122,19 @@ def _parse_datetime(value: str | None) -> datetime:
         return datetime.now(timezone.utc)
     if value.endswith("Z"):
         value = value[:-1] + "+00:00"
-    return datetime.fromisoformat(value)
+    parsed = datetime.fromisoformat(value)
+    if parsed.tzinfo is None:
+        return parsed.replace(tzinfo=timezone.utc)
+    return parsed
 
 
 def _to_iso(value: datetime) -> str:
     return value.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
+
+
+def _all_older_than(payload: list[dict[str, Any]], cutoff: datetime) -> bool:
+    for entry in payload:
+        published = _parse_datetime(entry.get("published_at"))
+        if published >= cutoff:
+            return False
+    return True

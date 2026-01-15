@@ -100,6 +100,9 @@ def _parse_datetime(value: str | None) -> datetime:
     try:
         if value.endswith("Z"):
             value = value[:-1] + "+00:00"
-        return datetime.fromisoformat(value)
+        parsed = datetime.fromisoformat(value)
+        if parsed.tzinfo is None:
+            return parsed.replace(tzinfo=timezone.utc)
+        return parsed
     except ValueError:
         return datetime.now(timezone.utc)

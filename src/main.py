@@ -199,7 +199,7 @@ async def _poll_once(feeds, notifier, config, state, dry_run: bool) -> None:
             continue
         items.extend(feed_result)
 
-    for item in sorted(items, key=lambda x: x.published):
+    for item in sorted(items, key=lambda x: _normalize_dt(x.published)):
         if was_sent(state, item.id):
             continue
         if not config.settings.include_low_severity and _is_low_severity(item):
@@ -236,6 +236,12 @@ def _is_low_severity(item) -> bool:
     if item.cvss_score is None:
         return False
     return item.cvss_score < 4.0
+
+
+def _normalize_dt(value: datetime) -> datetime:
+    if value.tzinfo is None:
+        return value.replace(tzinfo=timezone.utc)
+    return value
 
 
 if __name__ == "__main__":
